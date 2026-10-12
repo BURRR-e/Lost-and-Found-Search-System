@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lost and Found | Account</title>
+    
+    <link rel="stylesheet" href="/style/style.css">
+</head>
+<body>
+
+    <nav>
+        <div>
+            <h2>Lost and Found</h2>
+        </div>
+
+        <div>
+            <a href="../index.html">Home</a>
+            <a href="dashboard.html">Dashboard</a>
+            <a href="report.html">Report Item</a>
+            <a href="claims.html">My Claims</a>
+            <a href="contact.html">Contact</a>
+            <a href="account.html">Account</a>
+            <a href="admin.html">Admin Panel</a>
+        </div>
+    </nav>
+
+    <div>
+        <h1>My Account</h1>
+        <p>View and manage your account information.</p>
+    </div>
+
+    <div>
+        <h2>Profile Information</h2>
+
+        <div>
+            <p>Full Name: Sample User</p>
+            <p>Email Address: user@school.edu</p>
+            <p>School ID: 000000</p>
+            <p>Role: Student</p>
+        </div>
+
+        <div>
+            <a href="#edit-profile">Edit Profile</a>
+        </div>
+    </div>
+
+    <div>
+        <h2>My Activity</h2>
+
+        <div>
+            <h3>Lost Reports</h3>
+            <p>0 reports submitted</p>
+            <a href="report.html">Report an Item</a>
+        </div>
+
+        <div>
+            <h3>Found Reports</h3>
+            <p>0 reports submitted</p>
+            <a href="report.html">Report a Found Item</a>
+        </div>
+
+        <div>
+            <h3>Claim Requests</h3>
+            <p>0 claim requests submitted</p>
+            <a href="claims.html">View My Claims</a>
+        </div>
+    </div>
+
+    <div id="edit-profile">
+        <h2>Edit Profile</h2>
+
+        <form>
+            <div>
+                <label for="full-name">Full Name</label>
+                <input type="text" id="full-name" name="full-name"
+                    placeholder="Enter your full name">
+            </div>
+
+            <div>
+                <label for="account-email">Email Address</label>
+                <input type="email" id="account-email" name="account-email"
+                    placeholder="Enter your email">
+            </div>
+
+            <button type="submit">Save Changes</button>
+        </form>
+    </div>
+
+    <div>
+        <h2>Account Actions</h2>
+        <button type="button">Change Password</button>
+        <button type="button">Sign Out</button>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 School Lost and Found System</p>
+    </footer>
+
+</body>
+</html>

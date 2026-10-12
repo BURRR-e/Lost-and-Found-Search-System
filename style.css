@@ -1,0 +1,40 @@
+* {
+  margin: 0px;
+  font-family: "JetBrains Mono", monospace;
+}
+
+body {
+  background: url("/assets/background_img.png");
+  
+  background-size: 100% 100%;
+}
+
+div {
+  background: #F5F3EC;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  margin-left: 12px;
+  margin-right: 12px;
+  padding: 12px;
+  border: 2px solid grey;
+  border-radius: 12px;
+}
+
+footer {
+  position: fixed;
+  bottom: 5px;
+  width: 360px;
+  background: #F5F3EC;
+  margin-left: 12px;
+  margin-right: 12px;
+  padding: 12px;
+  font-size: 10px;
+  border: 2px solid grey;
+  border-radius: 12px;
+}
+
+a {
+  -webkit-tap-highlight-color: transparent;
+  text-decoration: none;
+  color: black;
+}

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lost and Found | Contact</title>
+  
+  <link rel="stylesheet" href="/style/style.css">
+</head>
+
+<body>
+  
+  <nav>
+    <div>
+      <h2>Lost and Found</h2>
+    </div>
+    
+    <div>
+      <a href="../index.html">Home</a>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="report.html">Report Item</a>
+      <a href="claims.html">My Claims</a>
+      <a href="contact.html">Contact</a>
+      <a href="account.html">Account</a>
+      <a href="admin.html">Admin Panel</a>
+    </div>
+  </nav>
+  
+  <div>
+    <h1>Contact Us</h1>
+    <p>Need help with a lost item or claim request?</p>
+  </div>
+  
+  <div>
+    <h2>Lost and Found Office</h2>
+    <p>Office Location: To be provided by the school</p>
+    <p>Office Hours: To be provided by the school</p>
+    <p>Email: To be provided by the school</p>
+    <p>Contact Number: To be provided by the school</p>
+  </div>
+  
+  <div>
+    <h2>Frequently Asked Questions</h2>
+    
+    <div>
+      <h3>How do I report a lost item?</h3>
+      <p>Open the Report Item page and complete the required information.</p>
+    </div>
+    
+    <div>
+      <h3>How do I claim a found item?</h3>
+      <p>Find the item on the Dashboard and submit a claim request.</p>
+    </div>
+    
+    <div>
+      <h3>How can I check my claim status?</h3>
+      <p>Visit the My Claims page to review your requests.</p>
+    </div>
+  </div>
+  
+  <div>
+    <h2>Send an Inquiry</h2>
+    
+    <form>
+      <div>
+        <label for="name">Full Name</label>
+        <input type="text" id="name" name="name" placeholder="Enter your full name" required>
+      </div>
+      
+      <div>
+        <label for="email">Email Address</label>
+        <input type="email" id="email" name="email" placeholder="Enter your email" required>
+      </div>
+      
+      <div>
+        <label for="subject">Subject</label>
+        <select id="subject" name="subject" required>
+          <option value="">Select a Subject</option>
+          <option value="lost-item">Lost Item Inquiry</option>
+          <option value="claim">Claim Request</option>
+          <option value="found-item">Found Item Inquiry</option>
+          <option value="technical">Website Issue</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      
+      <div>
+        <label for="message">Message</label>
+        <textarea id="message" name="message" placeholder="Write your inquiry here" required></textarea>
+      </div>
+      
+      <button type="submit">Send Inquiry</button>
+      <button type="reset">Clear Form</button>
+    </form>
+  </div>
+  
+  <footer>
+    <p>&copy; 2026 School Lost and Found System</p>
+  </footer>
+  
+</body>
+
+</html>
