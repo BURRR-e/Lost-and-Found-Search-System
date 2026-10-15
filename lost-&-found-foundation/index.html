@@ -4,16 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lost and Found | Home</title>
-    
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
-    
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-    
+
     <link rel="stylesheet" href="/style/style.css">
     <link rel="stylesheet" href="/style/navigation.css">
-    
+
 </head>
 <body>
 
@@ -23,42 +23,42 @@
             <h2>Lost and Found</h2>
             <i class="fa-solid fa-bars" id="navMenu"></i>
         </div>
-        
+
         <div class="nav-links">
             <a href="index.html">
                 <i class="fa-solid fa-house"></i>
                 <span>Home</span>
             </a>
-            
+
             <a href="page/dashboard.html">
                 <i class="fa-solid fa-table-columns"></i>
                 <span>Dashboard</span>
             </a>
-            
+
             <a href="page/report.html">
                 <i class="fa-solid fa-file-lines"></i>
                 <span>Report Item</span>
             </a>
-            
+
             <a href="page/claims.html">
                 <i class="fa-solid fa-hand-holding"></i>
                 <span>My Claims</span>
             </a>
-            
+
             <a href="page/contact.html">
                 <i class="fa-solid fa-headset"></i>
                 <span>Contact</span>
             </a>
-            
+
             <a href="page/account.html">
                 <i class="fa-solid fa-user"></i>
                 <span>Account</span>
             </a>
-            
-            <a href="page/admin.html">
+
+          <!-- --  <a href="page/admin.html">
                 <i class="fa-solid fa-user-shield"></i>
                 <span>Admin Panel</span>
-            </a>
+                </a> -->
         </div>
     </nav>
 
@@ -80,36 +80,30 @@
 
         <div>
             <h3>Lost Items</h3>
-            <p>0 reported items</p>
+            <p id="lost-items-count">0 reported items</p>
         </div>
 
         <div>
             <h3>Found Items</h3>
-            <p>0 reported items</p>
+            <p id="found-items-count">0 reported items</p>
         </div>
 
         <div>
             <h3>Returned Items</h3>
-            <p>0 returned items</p>
+            <p id="returned-items-count">0 returned items</p>
         </div>
     </div>
 
     <div>
         <h2>Recently Reported Items</h2>
-        
-        <div>
-            
-        </div>
-        
+        <div id="home-recent-reports"></div>
     </div>
 
     <footer>
         <p>&copy; 2026 School Lost and Found System</p>
     </footer>
-    
+
     <script src="/script/navigation.js"></script>
-    <script src="/script/report.js"></script>
+    <script src="/script/home.js"></script>
 </body>
 </html>
-
-
