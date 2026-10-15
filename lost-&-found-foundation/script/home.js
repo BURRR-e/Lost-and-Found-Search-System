@@ -1,5 +1,4 @@
 async function loadHomeData() {
-  // Load stats
   const lostElem = document.getElementById('lost-items-count');
   const foundElem = document.getElementById('found-items-count');
   const returnedElem = document.getElementById('returned-items-count');
@@ -19,7 +18,6 @@ async function loadHomeData() {
     console.error('Failed to load stats:', e);
   }
 
-  // Load recent reports
   const container = document.getElementById('home-recent-reports');
   if (!container) return;
 
