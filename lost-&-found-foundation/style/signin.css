@@ -1,93 +1,141 @@
-body {
-  margin: 0;
-  min-height: 100vh;
-  background-color: #DDE7F5;
-}
-#logo {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  object-fit: contain
-}
-#footer {
-  padding: 12px;
-  background-color: #12263F;
-  color: #FFFFFF;
-  border: 2px solid #D5DDE8;
-  font-size: 10px;
-  border-radius: 12px;
-}
-.head {
-    display: grid;
-    grid-template-columns: 40px minmax(0, 1fr) 40px;
-    align-items: center;
-    gap: 8px;
-    margin: 0;
-    padding: 8px;
-    background: #1E3C60;
-    color: #FFFFFF;
-    border: none;
-    border-radius: 0;
-}
-h1 {
-  color: #17283C;
-}
-label {
-  color: #17283C;
-}
-#submit {
-  width: 100%;
-  border: none;
-  margin-top: 5px;
-  border-radius: 7px;
-  padding: 13px;
-  font-size: 15px;
-  font-weight: bold;
-  background-color: #203E60;
-  color: white;
-  cursor: pointer;
-}
-input:focus, select:focus {
-  border-color: #203E60;
-}
-input, select {
-  box-sizing: border-box;
-  width: 100%;
-  padding: 12px;
-  margin-bottom: 17px;
-  border: 1px solid #C8D6E8;
-  border-radius: 7px;
-  outline: none;
-  font-size: 14px;
-}
-h1 {
-  text-align: center;
-  font-size: 28px;
-  margin-bottom: 8px
-}
-p {
-  text-align: center;
-  font-size: 14px;
-  color: #6B7D91;
-  margin-bottom: 25px;
-  font-family: monospace;
-}
-label {
-  font-size: 14px;
-  font-weight: bold;
-  margin-bottom: 7px;
-}
 .whole {
-  width: 85%;
-  max-width: 380px;
-  margin: 35px auto;
-  padding: 25px;
-  background-color: white;
-  border-radius: 15px;
-  box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.1);
+    width: min(460px, calc(100% - 24px));
+    margin: 30px auto;
+    padding: 20px;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 12px;
 }
-a {
-  text-decoration: none;
-  font-weight: bold;
-  color: #6B7D91;
+
+.greet {
+    margin: 0 0 20px;
+    padding: 12px;
+    background: var(--hero-bg);
+    border: 1px solid var(--blue-border);
+    border-radius: 12px;
+    text-align: center;
+}
+
+.greet h1 {
+    margin-bottom: 8px;
+    font-family: var(--font-heading);
+    color: var(--heading);
+}
+
+.greet p {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+#questions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+}
+
+#questions label {
+    margin-top: 4px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+#questions input,
+#questions select {
+    width: 100%;
+    min-height: 38px;
+    padding: 8px 10px;
+    background: var(--input-bg);
+    color: var(--input-text);
+    border: 1px solid var(--input-border);
+    border-radius: 12px;
+    font-family: var(--font-body);
+    font-size: 13px;
+}
+
+#questions input::placeholder {
+    color: var(--placeholder);
+    font-size: 13px;
+}
+
+#questions input:focus,
+#questions select:focus {
+    outline: var(--input-outline-width) solid var(--input-outline-focus);
+    outline-offset: var(--input-outline-offset);
+}
+
+#submit {
+    width: min(100%, 220px);
+    min-height: 40px;
+    height: auto;
+    margin: 14px auto 0;
+    padding: 10px 16px;
+    background: var(--btn-primary);
+    color: var(--btn-primary-text);
+    border: 1px solid var(--btn-outline);
+    border-radius: 12px;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+#submit:hover {
+    background: var(--btn-primary-hover);
+    transform: translateY(-1px);
+}
+
+#submit:focus-visible {
+    outline: 2px solid var(--input-focus);
+    outline-offset: 3px;
+}
+
+.whole > p {
+    margin-top: 18px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.8;
+    text-align: center;
+}
+
+.whole > p a {
+    display: inline;
+    padding: 0;
+    color: var(--secondary);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.whole > p a:hover {
+    text-decoration: underline;
+}
+
+#footer {
+    margin: 5px 12px;
+    padding: 12px;
+    background: var(--footer-bg);
+    color: var(--nav-text);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    font-size: 10px;
+    text-align: center;
+}
+
+@media screen and (max-width: 480px) {
+    .whole {
+        margin: 20px auto;
+        padding: 15px;
+    }
+
+    .greet h1 {
+        font-size: 26px;
+    }
+
+    #questions label {
+        font-size: 13px;
+    }
 }

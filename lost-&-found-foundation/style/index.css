@@ -1,7 +1,7 @@
 .front-page {
- display: grid;
- grid-template-columns: repeat(2, 1fr);
- height: 80vh;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-height: 80vh;
 }
 
 .headings {
@@ -11,36 +11,254 @@
     padding: 20px;
 }
 
- button {
-    display: inline;
-    height: 40px;
+button {
+    display: inline-block;
+    min-height: 40px;
     margin: 20px;
-} 
+}
 
 .btn {
-    justify-self: center;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
     border: none;
 }
 
 .image {
+    border: none;
+    align-self: center;
+    min-width: 0;
+}
+
+.image img {
+    display: block;
     border: 2px dashed;
-    background: url("/assets/img1.png");
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
+    width: 100%;
+    max-width: 550px;
+    height: auto;
+    justify-self: center;
+}
+
+.tuts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+    border: none;
+}
+
+.tuts div {
+    border: none;
+}
+
+.tuts div i {
+    font-size: 30px;
+    padding: 12px;
+}
+
+.tuts img {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+}
+
+.pages h3 {
+    text-align: center;
 }
 
 .snap {
-    height: 85vh;
-    overflow-y: auto;
-    scroll-snap-type: y mandatory;
-    scroll-behavior: smooth;
+    margin: 0;
+}
+
+.out {
+    justify-self: center;
+}
+
+.quote {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: center;
+    gap: 30px;
+    border: none;
+}
+
+.quote img {
+    width: 100%;
+    max-width: 400px;
+    height: auto;
+    border-radius: 12px;
+    justify-self: center;
+}
+
+.quote div {
+    justify-self: center;
+    align-self: center;
+    border: none;
+}
+
+.mission {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 25px;
+    border: none;
+}
+
+.mission > div {
+    display: grid;
+    justify-items: center;
+    align-content: start;
+    gap: 15px;
+    padding: 25px;
+    border: none;
+    border-radius: 16px;
+    text-align: center;
+    background: #FEF5E6;
+}
+
+.mission > div i {
+    font-size: 60px;
+    color: #8984C4;
 }
 
 .front-page,
-.pages {
-    min-height: 100%;
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
+.headings,
+.image,
+.tuts,
+.quote,
+.mission {
+    min-width: 0;
 }
 
+img {
+    max-width: 100%;
+}
+
+@media screen and (max-width: 599px) {
+    .front-page {
+        grid-template-columns: 1fr;
+        gap: 20px;
+        min-height: auto;
+    }
+
+    .headings {
+        font-size: 16px;
+        padding: 20px;
+    }
+
+    .image {
+        min-height: 37vh;
+    }
+
+    button {
+        min-height: 32px;
+        margin: 5px;
+    }
+
+    .btn {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .tuts {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        gap: 20px;
+    }
+
+    .tuts img {
+        width: 250px;
+        max-width: 100%;
+    }
+
+    .snap {
+        margin: 0;
+    }
+
+    .front-page,
+    .pages {
+        min-height: auto;
+    }
+
+    .quote {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .quote img {
+        max-width: 300px;
+    }
+
+    .mission {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media screen and (min-width: 600px) and (max-width: 1199px) {
+    .front-page {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        min-height: 80vh;
+    }
+
+    .headings {
+        font-size: 20px;
+        padding: 20px;
+    }
+
+    .image {
+        min-height: 37vh;
+    }
+
+    .tuts {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        justify-items: center;
+    }
+
+    .tuts img {
+        width: 250px;
+        max-width: 100%;
+    }
+
+    .btn {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .out {
+        justify-self: center;
+    }
+
+    .quote {
+        gap: 20px;
+    }
+}
+
+@media screen and (min-width: 1200px) {
+    .snap {
+        height: 85vh;
+        overflow-y: auto;
+        scroll-snap-type: y mandatory;
+        scroll-behavior: smooth;
+    }
+
+    .front-page,
+    .pages {
+        min-height: 100%;
+        scroll-snap-align: start;
+        scroll-snap-stop: always;
+    }
+
+    .tuts {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 20px;
+        border: none;
+    }
+
+    .tuts div {
+        border: none;
+    }
+
+    .tuts div i {
+        font-size: 30px;
+        padding: 12px;
+    }
+}
