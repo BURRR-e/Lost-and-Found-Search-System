@@ -1,0 +1,69 @@
+:root {
+  /* School Supplies (Blue: #2878D0) */
+  --bg-school-supplies: #EFF6FC;
+  --border-school-supplies: #1F63B0;
+
+  /* Electronics (Green: #269B68) */
+  --bg-electronics: #EEF8F3;
+  --border-electronics: #1E8256;
+
+  /* Personal Belongings (Purple: #8854C0) */
+  --bg-personal-belongings: #F6F2FA;
+  --border-personal-belongings: #7142A5;
+
+  /* Clothing (Orange: #E87524) */
+  --bg-clothing: #FDF4ED;
+  --border-clothing: #CD6118;
+
+  /* Miscellaneous (Red: #D94352) */
+  --bg-others: #FDF1F2;
+  --border-others: #C03341;
+}
+
+.personal-belongings {
+  width: 285px;
+  background: var(--bg-personal-belongings);
+  border: 2px solid var(--border-personal-belongings);
+}
+
+.school-supplies {
+  width: 285px;
+  background: var(--bg-school-supplies);
+  border: 2px solid var(--border-school-supplies);
+}
+
+.electronics {
+  width: 285px;
+  background: var(--bg-electronics);
+  border: 2px solid var(--border-electronics);
+}
+
+.clothing {
+  width: 285px;
+  background: var(--bg-clothing);
+  border: 2px solid var(--border-clothing);
+}
+
+.others {
+  width: 285px;
+  background: var(--bg-others);
+  border: 2px solid var(--border-others);
+}
+
+.categoryImage {
+  width: 255px;
+  border-radius: 12px;
+}
+
+.school-supplies,
+.personal-belongings,
+.electronics,
+.clothing,
+.others {
+  z-index: 5;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+

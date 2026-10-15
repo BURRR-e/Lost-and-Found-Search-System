@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lost and Found | Admin Panel</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="/style/style.css">
+    <link rel="stylesheet" href="/style/navigation.css">
+    <link rel="stylesheet" href="/style/category.css">
+    
+</head>
+<body>
+
+    <nav>
+        <div class="head">
+            <img src="/assets/logo.png" alt="Logo" class="logo">
+            <h2>Lost and Found (<i class="fa-solid fa-user-shield"></i>ADMIN)</h2>
+            <i class="fa-solid fa-bars" id="navMenu"></i>
+        </div>
+        
+        <div class="nav-links">
+            <a href="adminAccount.html">
+                <i class="fa-solid fa-user-shield"></i>
+                <span>Admin Account</span>
+            </a>
+            
+            <a href="chart.html">
+                <i class="fa-solid fa-chart-line"></i>
+                <span>Chart Panel</span>
+            </a>
+            
+            <a href="database.html">
+                <i class="fa-solid fa-table"></i>
+                <span>Database</span>
+            </a>
+            
+            <a href="reportHandler.html">
+                <i class="fa-solid fa-file-circle-check"></i>
+                <span>Report Handler</span>
+            </a>
+            
+            <a href="claimHandler.html">
+                <i class="fa-solid fa-clipboard-check"></i>
+                <span>Claim Handler</span>
+            </a>
+        </div>
+    </nav>
+
+    <div>
+        <h1>Admin Account</h1>
+        <p>Manage reports, claim requests, and website inquiries.</p>
+    </div>
+
+    <div>
+        <h2>System Statistics</h2>
+
+        <div>
+            <h3>Total Reports</h3>
+            <p>0</p>
+        </div>
+
+        <div>
+            <h3>Pending Claims</h3>
+            <p>0</p>
+        </div>
+
+        <div>
+            <h3>Completed Returns</h3>
+            <p>0</p>
+        </div>
+
+        <div>
+            <h3>Unresolved Inquiries</h3>
+            <p>0</p>
+        </div>
+    </div>
+
+    <div>
+        <h2>Manage Item Reports</h2>
+
+        <div class="box1">
+            <img src="/assets/category/personal-belongings.png" alt="" />
+            <h3>Sample Report</h3>
+            <p>Item: Sample Wallet</p>
+            <p>Reported By: Sample User</p>
+            <p>Report Type: Found</p>
+            <p>Status: Under Review</p>
+
+            <button type="button">Approve Report</button>
+            <button type="button">Reject Report</button>
+            <button type="button">Flag Report</button>
+        </div>
+    </div>
+
+    <div>
+        <h2>Manage Claim Requests</h2>
+
+        <div class="box1">
+            <img src="/assets/category/personal-belongings.png" alt="" />
+            <h3>Claim CLM-001</h3>
+            <p>Item: Sample Wallet</p>
+            <p>Claimant: Sample User</p>
+            <p>Status: Pending</p>
+
+            <button type="button">Approve Claim</button>
+            <button type="button">Reject Claim</button>
+        </div>
+
+        <div class="box2">
+            <img src="/assets/category/school-supplies.png" alt="" />
+            <h3>Claim CLM-002</h3>
+            <p>Item: Sample Notebook</p>
+            <p>Claimant: Another User</p>
+            <p>Status: Approved</p>
+
+            <button type="button">Mark as Returned</button>
+        </div>
+    </div>
+
+    <div>
+        <h2>Manage Inquiries</h2>
+
+        <div>
+            <h3>Sample Inquiry</h3>
+            <p>From: Sample User</p>
+            <p>Subject: Claim Request</p>
+            <p>Status: Unresolved</p>
+
+            <button type="button">Mark as Resolved</button>
+        </div>
+    </div>
+
+    <div>
+        <h2>Recent Activity</h2>
+
+        <div>
+            <p>No recent activity to display.</p>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 School Lost and Found System</p>
+    </footer>
+    
+    <script src="/script/navigation.js"></script>
+
+</body>
+</html>

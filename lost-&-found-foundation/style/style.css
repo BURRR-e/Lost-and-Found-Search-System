@@ -1,0 +1,290 @@
+
+* {
+    margin: 0;
+    font-family: "JetBrains Mono", monospace;
+    box-sizing: border-box;
+}
+
+:root {
+    --bg: #F8FAFC;
+    --surface: #FFFFFF;
+    --nav-bg: #1E3A5F;
+    --nav-text: #FFFFFF;
+    --nav-hover: #F5B700;
+    --primary: #F5B700;
+    --primary-hover: #D99E00;
+    --secondary: #2A6F97;
+    --border: #D5DDE8;
+    --heading: #14263F;
+    --text: #334155;
+    --muted: #64748B;
+    --footer-bg: #14263F;
+    --hero-bg: #E8F0F8;
+    --success: #2E9E6B;
+    --danger: #E5533D;
+    --warning: #F59E0B;
+    --font-heading: 'Space Grotesk', sans-serif;
+    --font-body: 'JetBrains Mono', monospace;
+    --btn-primary: #F5B700;
+    --btn-primary-hover: #D99E00;
+    --btn-primary-text: #14263F;
+    --btn-secondary: #2A6F97;
+    --btn-secondary-hover: #205A7C;
+    --btn-outline: #1E3A5F;
+    --btn-outline-hover: #E8F0F8;
+    --btn-success: #2E9E6B;
+    --btn-success-hover: #25805A;
+    --btn-danger: #E5533D;
+    --btn-danger-hover: #C4412D;
+    --btn-disabled-bg: #E2E8F0;
+    --btn-disabled-text: #94A3B8;
+    --placeholder: #94A3B8;
+    --placeholder-hover: #64748B;
+    --placeholder-disabled: #CBD5E1;
+    --input-text: #334155;
+    --input-bg: #FFFFFF;
+    --input-border: #D5DDE8;
+    --input-focus: #2A6F97;
+    --input-focus-glow: #2A6F9726;
+    --input-outline: #D5DDE8;
+    --input-outline-focus: #2A6F97;
+    --input-outline-offset: 2px;
+    --input-outline-width: 2px;
+    --textarea-width: 100%;
+    --textarea-min-height: 120px;
+    --textarea-padding: 12px;
+    --textarea-radius: 12px;
+    --textarea-font-size: clamp(14px, 3vw, 18px);
+    --textarea-placeholder: var(--placeholder);
+    --textarea-bg: var(--input-bg);
+    --textarea-border: var(--input-border);
+    --textarea-focus: var(--input-focus);
+    --file-bg: #FFFFFF;
+    --file-text: #334155;
+    --file-border: #D5DDE8;
+    --file-button-bg: #F5B700;
+    --file-button-hover: #D99E00;
+    --file-button-text: #14263F;
+    --file-radius: 12px;
+    --file-padding: 10px;
+    --red-bg: #FCE8E6;
+    --red-border: #E8A09A;
+    --red-text: #702D2A;
+    --orange-bg: #FCEBD9;
+    --orange-border: #E8B477;
+    --orange-text: #70451F;
+    --yellow-bg: #FFF6CC;
+    --yellow-border: #E2CA65;
+    --yellow-text: #665414;
+    --green-bg: #E5F2E5;
+    --green-border: #9BC49A;
+    --green-text: #2F5935;
+    --blue-bg: #E4EEFC;
+    --blue-border: #98B8E8;
+    --blue-text: #244675;
+    --indigo-bg: #EAE8FA;
+    --indigo-border: #ADA7E0;
+    --indigo-text: #403875;
+    --violet-bg: #F4E6F7;
+    --violet-border: #D0A6D8;
+    --violet-text: #65366D;
+}
+
+body {
+    background: var(--bg);
+    color: var(--text);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    color: var(--heading);
+}
+
+div {
+    background: var(--blue-bg);
+    margin: 5px 12px;
+    padding: 12px;
+    border: 2px solid var(--blue-border);
+    border-radius: 12px;
+}
+
+.head {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) 40px;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 8px;
+    background: var(--nav-bg);
+    color: var(--nav-text);
+    border: none;
+    border-radius: 0;
+}
+
+.head h2 {
+    color: var(--nav-text);
+    font-size: clamp(18px, 2vw, 30px);
+    white-space: nowrap;
+}
+
+.head i {
+    font-size: 26px;
+    align-self: center;
+    justify-self: center;
+    cursor: pointer;
+}
+
+.logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    object-fit: contain;
+}
+
+form div {
+    padding: 0;
+    border: none;
+}
+
+footer {
+    margin: 5px 12px;
+    padding: 12px;
+    background: var(--footer-bg);
+    color: var(--nav-text);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    font-size: 10px;
+}
+
+a {
+    display: flex;
+    padding: 12px;
+    color: var(--btn-secondary);
+    -webkit-tap-highlight-color: transparent;
+}
+
+button {
+    display: block;
+    min-width: 150px;
+    height: 30px;
+    margin: 10px auto;
+    background: var(--btn-primary);
+    color: var(--btn-primary-text);
+    border: 1px solid var(--btn-outline);
+    border-radius: 12px;
+}
+
+input {
+    width: 100%;
+    height: 30px;
+    padding: 5px;
+    background: var(--input-bg);
+    color: var(--input-text);
+    border: 1px solid var(--input-border);
+    border-radius: 12px;
+    outline: none;
+    text-align: left;
+}
+
+input::placeholder {
+    color: var(--muted);
+    font-size: 16px;
+    opacity: 1;
+}
+
+input:focus {
+    outline: var(--input-outline-width) solid var(--input-outline-focus);
+    outline-offset: var(--input-outline-offset);
+}
+
+label {
+    color: var(--muted);
+    font-size: 16px;
+}
+
+option {
+    color: var(--text);
+    font-size: 16px;
+}
+
+select {
+    width: 100%;
+    height: 30px;
+    background: var(--input-bg);
+    font-size: 16px;
+    border: 1px solid var(--textarea-border);
+    border-radius: 12px;
+}
+
+select:focus {
+    border: 1px solid var(--btn-outline);
+    outline: 2px solid var(--textarea-focus);
+    outline-offset: 2px;
+}
+
+textarea {
+    width: var(--textarea-width);
+    min-height: var(--textarea-min-height);
+    padding: var(--textarea-padding);
+    box-sizing: border-box;
+    border: 1px solid var(--textarea-border);
+    border-radius: var(--textarea-radius);
+    background: var(--textarea-bg);
+    color: var(--input-text);
+    font-family: var(--font-body);
+    font-size: 16px;
+    resize: vertical;
+}
+
+textarea::placeholder {
+    color: var(--textarea-placeholder);
+    font-size: var(--textarea-font-size);
+    opacity: 1;
+}
+
+textarea:focus {
+    outline: 2px solid var(--textarea-focus);
+    outline-offset: 2px;
+}
+
+input[type="file"] {
+    width: 100%;
+    height: auto;
+    padding: var(--file-padding);
+    background: var(--file-bg);
+    color: var(--file-text);
+    border: 1px solid var(--file-border);
+    border-radius: var(--file-radius);
+    font-size: 16px;
+}
+
+input[type="file"]::file-selector-button {
+    -webkit-tap-highlight-color: transparent;
+    margin-right: 12px;
+    padding: 8px 12px;
+    background: var(--file-button-bg);
+    color: var(--file-button-text);
+    border: 1px solid var(--btn-outline);
+    border-radius: 8px;
+    font-family: var(--font-body);
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+input[type="file"]::file-selector-button:hover {
+    background: var(--file-button-hover);
+}
+
+input[type="file"]:focus-visible {
+    outline: 2px solid var(--input-focus);
+    outline-offset: 2px;
+}
+
+input[type="date"] {
+    font-size: 16px;
+}
+
+img {
+    width: 305px;
+    border-radius: 12px;
+}
