@@ -1,1 +1,46 @@
+.front-page {
+ display: grid;
+ grid-template-columns: repeat(2, 1fr);
+ height: 80vh;
+}
+
+.headings {
+    border: none;
+    font-size: 25px;
+    align-content: center;
+    padding: 20px;
+}
+
+ button {
+    display: inline;
+    height: 40px;
+    margin: 20px;
+} 
+
+.btn {
+    justify-self: center;
+    border: none;
+}
+
+.image {
+    border: 2px dashed;
+    background: url("/assets/img1.png");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.snap {
+    height: 85vh;
+    overflow-y: auto;
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+}
+
+.front-page,
+.pages {
+    min-height: 100%;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+}
 
