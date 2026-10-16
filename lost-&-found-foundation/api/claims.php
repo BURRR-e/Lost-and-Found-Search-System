@@ -31,28 +31,33 @@ function handleGetClaims(PDO $pdo): void {
     $whereClause = ['1=1'];
     $params = [];
 
-    if ($status !== 'all') {
-        $whereClause[] = "status = :status";
+    if ($status !== 'all' && !empty($status)) {
+        $whereClause[] = "c.status = :status";
         $params[':status'] = $status;
     }
 
     if (!empty($email)) {
-        $whereClause[] = "email = :email";
+        $whereClause[] = "c.email = :email";
         $params[':email'] = $email;
     }
 
     $sql = "SELECT c.id, c.claim_id, c.report_id, c.report_code, c.item_name, c.full_name, c.email, c.school_id, c.status, c.staff_feedback, c.created_at,
-                   r.photo_url, r.category, r.description
+                   COALESCE(r.photo_url, '/assets/category/others.png') as photo_url,
+                   COALESCE(r.category, 'others') as category,
+                   COALESCE(r.description, '') as description
             FROM claims c
-            LEFT JOIN reports r ON c.report_id = r.id OR c.report_code = r.report_id
+            LEFT JOIN reports r ON (c.report_id = r.id OR (c.report_code IS NOT NULL AND c.report_code = r.report_id))
             WHERE " . implode(' AND ', $whereClause) . "
             ORDER BY c.id DESC";
 
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
-    $claims = $stmt->fetchAll();
-
-    jsonResponse(['success' => true, 'data' => $claims]);
+    try {
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $claims = $stmt->fetchAll();
+        jsonResponse(['success' => true, 'data' => $claims]);
+    } catch (PDOException $e) {
+        jsonResponse(['success' => false, 'error' => $e->getMessage(), 'data' => []], 500);
+    }
 }
 
 function handleCreateClaim(PDO $pdo): void {
@@ -96,6 +101,15 @@ function handleCreateClaim(PDO $pdo): void {
         ':email'       => $email,
         ':school_id'   => $schoolId
     ]);
+
+    // Mark report status as 'claimed' when a claim is requested
+    if ($reportDbId) {
+        $upStmt = $pdo->prepare("UPDATE reports SET status = 'claimed' WHERE id = :id AND status = 'confirmed'");
+        $upStmt->execute([':id' => $reportDbId]);
+    } elseif ($reportCode) {
+        $upStmt = $pdo->prepare("UPDATE reports SET status = 'claimed' WHERE report_id = :code AND status = 'confirmed'");
+        $upStmt->execute([':code' => $reportCode]);
+    }
 
     jsonResponse([
         'success' => true,
@@ -177,6 +191,21 @@ function handleDeleteClaim(PDO $pdo): void {
 
     if (!$id && !$claimId) {
         jsonResponse(['error' => 'Claim ID is required.'], 400);
+    }
+
+    // Restore report status back to 'confirmed' if claim is cancelled
+    $cStmt = $pdo->prepare("SELECT report_id, report_code FROM claims WHERE " . ($id ? "id = :id" : "claim_id = :claim_id"));
+    $cStmt->execute($id ? [':id' => $id] : [':claim_id' => $claimId]);
+    $cRow = $cStmt->fetch();
+
+    if ($cRow) {
+        if ($cRow['report_id']) {
+            $upStmt = $pdo->prepare("UPDATE reports SET status = 'confirmed' WHERE id = :rid AND status = 'claimed'");
+            $upStmt->execute([':rid' => $cRow['report_id']]);
+        } elseif ($cRow['report_code']) {
+            $upStmt = $pdo->prepare("UPDATE reports SET status = 'confirmed' WHERE report_id = :rcode AND status = 'claimed'");
+            $upStmt->execute([':rcode' => $cRow['report_code']]);
+        }
     }
 
     if ($id) {

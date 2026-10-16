@@ -96,6 +96,7 @@ async function displayConfirmedReports(searchQuery = '', categoryFilter = '', st
             const claimResult = await claimRes.json();
             if (claimRes.ok && claimResult.success) {
               alert('Claim request submitted! You can view status in My Claims.');
+              displayConfirmedReports();
             } else {
               alert(claimResult.error || 'Could not submit claim request.');
             }

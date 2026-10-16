@@ -1,22 +1,21 @@
 async function loadUserClaims() {
-  const claimsContainer = document.querySelector('body > div:nth-of-type(2)');
+  const claimsContainer = document.getElementById('user-claims-container');
   if (!claimsContainer) return;
 
   try {
-    const res = await fetch('/api/claims.php?email=user@school.edu');
-    if (!res.ok) return;
+    const res = await fetch('/api/claims.php?status=all');
+    if (!res.ok) {
+      claimsContainer.innerHTML = '<p>Unable to load claim requests.</p>';
+      return;
+    }
 
     const result = await res.json();
     const claims = result.success ? result.data : [];
-    const heading = claimsContainer.querySelector('h2');
+
     claimsContainer.innerHTML = '';
-    if (heading) claimsContainer.appendChild(heading);
 
     if (claims.length === 0) {
-      const p = document.createElement('p');
-      p.textContent = 'No claim requests found.';
-      p.style.padding = '15px';
-      claimsContainer.appendChild(p);
+      claimsContainer.innerHTML = '<p>No claim requests found in database.</p>';
       return;
     }
 
@@ -91,6 +90,9 @@ async function loadUserClaims() {
 
   } catch (err) {
     console.error('Error loading claims:', err);
+    if (claimsContainer) {
+      claimsContainer.innerHTML = '<p>Error loading claim requests from server.</p>';
+    }
   }
 }
 

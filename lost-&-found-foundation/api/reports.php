@@ -25,18 +25,21 @@ switch ($method) {
 }
 
 function handleGetReports(PDO $pdo): void {
-    $status   = $_GET['status'] ?? 'all';
+    $status   = strtolower(trim($_GET['status'] ?? 'all'));
     $search   = trim($_GET['search'] ?? '');
     $category = trim($_GET['category'] ?? '');
-    $type     = trim($_GET['type'] ?? '');
+    $type     = strtolower(trim($_GET['type'] ?? ''));
     $limit    = isset($_GET['limit']) ? (int)$_GET['limit'] : 0;
 
     $whereClause = ['1=1'];
     $params = [];
 
-    if ($status !== 'all') {
+    if ($status !== 'all' && !empty($status)) {
         if ($status === 'dashboard') {
-            $whereClause[] = "status IN ('confirmed', 'claimed', 'returned')";
+            $whereClause[] = "status IN ('confirmed', 'pending', 'claimed', 'returned') AND status != 'rejected'";
+        } elseif ($status === 'lost' || $status === 'found') {
+            $whereClause[] = "report_type = :status_type AND status != 'rejected'";
+            $params[':status_type'] = $status;
         } else {
             $whereClause[] = "status = :status";
             $params[':status'] = $status;
@@ -58,29 +61,34 @@ function handleGetReports(PDO $pdo): void {
         $params[':search'] = '%' . $search . '%';
     }
 
-    $sql = "SELECT id, report_id, item_name, category, description, date_event, location, photo_url, status, report_type, created_at
-            FROM reports
-            WHERE " . implode(' AND ', $whereClause) . "
+    $sql = "SELECT id, report_id, item_name, category, description, date_event, location, photo_url, status, report_type, created_at 
+            FROM reports 
+            WHERE " . implode(' AND ', $whereClause) . " 
             ORDER BY id DESC";
 
     if ($limit > 0) {
         $sql .= " LIMIT " . $limit;
     }
 
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
-    $reports = $stmt->fetchAll();
-
-    jsonResponse(['success' => true, 'data' => $reports]);
+    try {
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $reports = $stmt->fetchAll();
+        jsonResponse(['success' => true, 'data' => $reports]);
+    } catch (PDOException $e) {
+        jsonResponse(['success' => false, 'error' => $e->getMessage(), 'data' => []], 500);
+    }
 }
 
 function handleCreateReport(PDO $pdo): void {
-    $itemName    = trim($_POST['item-name'] ?? $_POST['itemName'] ?? '');
-    $category    = trim($_POST['item-category'] ?? $_POST['category'] ?? 'others');
-    $description = trim($_POST['description'] ?? '');
-    $dateEvent   = trim($_POST['date'] ?? date('Y-m-d'));
-    $location    = trim($_POST['location'] ?? '');
-    $reportType  = trim($_POST['report_type'] ?? $_POST['type'] ?? 'lost');
+    $input = getJsonInput();
+
+    $itemName    = trim($input['item-name'] ?? $input['itemName'] ?? $input['item_name'] ?? $_POST['item-name'] ?? $_POST['item_name'] ?? '');
+    $category    = trim($input['item-category'] ?? $input['category'] ?? $input['item_category'] ?? $_POST['item-category'] ?? 'others');
+    $description = trim($input['description'] ?? $_POST['description'] ?? '');
+    $dateEvent   = trim($input['date'] ?? $input['date_event'] ?? $_POST['date'] ?? date('Y-m-d'));
+    $location    = trim($input['location'] ?? $_POST['location'] ?? '');
+    $reportType  = trim($input['report_type'] ?? $input['report-type'] ?? $input['type'] ?? $_POST['report_type'] ?? 'lost');
 
     if (empty($itemName)) {
         jsonResponse(['error' => 'Item name is required.'], 400);
@@ -107,8 +115,8 @@ function handleCreateReport(PDO $pdo): void {
         }
     }
 
-    if (empty($photoUrl) && !empty($_POST['photo_url'])) {
-        $photoUrl = trim($_POST['photo_url']);
+    if (empty($photoUrl) && (!empty($input['photo_url']) || !empty($_POST['photo_url']))) {
+        $photoUrl = trim($input['photo_url'] ?? $_POST['photo_url'] ?? '');
     }
 
     if (empty($photoUrl)) {
@@ -129,7 +137,7 @@ function handleCreateReport(PDO $pdo): void {
     $reportId = sprintf("R-%s-#%03d", $todayStr, $todayCount);
 
     $sql = "INSERT INTO reports (report_id, item_name, category, description, date_event, location, photo_url, status, report_type)
-            VALUES (:report_id, :item_name, :category, :description, :date_event, :location, :photo_url, 'pending', :report_type)";
+            VALUES (:report_id, :item_name, :category, :description, :date_event, :location, :photo_url, 'confirmed', :report_type)";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute([
@@ -157,7 +165,7 @@ function handleCreateReport(PDO $pdo): void {
             'date_event'  => $dateEvent,
             'location'    => $location,
             'photo_url'   => $photoUrl,
-            'status'      => 'pending',
+            'status'      => 'confirmed',
             'report_type' => $reportType
         ]
     ], 201);

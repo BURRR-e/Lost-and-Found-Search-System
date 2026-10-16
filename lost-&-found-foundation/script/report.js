@@ -142,13 +142,16 @@ if (report && confirmation) {
       confirmButton.disabled = true;
 
       try {
+        const reportTypeSelect = report.elements['report-type'];
+        const reportType = reportTypeSelect ? reportTypeSelect.value : 'lost';
+
         const formData = new FormData();
         formData.append('item-name', itemName);
         formData.append('item-category', category);
         formData.append('description', description);
         formData.append('date', date);
         formData.append('location', location);
-        formData.append('report_type', 'lost');
+        formData.append('report_type', reportType);
         if (photo) {
           formData.append('photo', photo);
         }
