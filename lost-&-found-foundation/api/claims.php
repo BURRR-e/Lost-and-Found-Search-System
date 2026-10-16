@@ -102,7 +102,6 @@ function handleCreateClaim(PDO $pdo): void {
         ':school_id'   => $schoolId
     ]);
 
-    // Mark report status as 'claimed' when a claim is requested
     if ($reportDbId) {
         $upStmt = $pdo->prepare("UPDATE reports SET status = 'claimed' WHERE id = :id AND status = 'confirmed'");
         $upStmt->execute([':id' => $reportDbId]);
@@ -193,7 +192,6 @@ function handleDeleteClaim(PDO $pdo): void {
         jsonResponse(['error' => 'Claim ID is required.'], 400);
     }
 
-    // Restore report status back to 'confirmed' if claim is cancelled
     $cStmt = $pdo->prepare("SELECT report_id, report_code FROM claims WHERE " . ($id ? "id = :id" : "claim_id = :claim_id"));
     $cStmt->execute($id ? [':id' => $id] : [':claim_id' => $claimId]);
     $cRow = $cStmt->fetch();

@@ -1,5 +1,4 @@
 async function loadAdminAccountOverview() {
-  // Load System Statistics
   try {
     const statsRes = await fetch('/api/stats.php');
     if (statsRes.ok) {
@@ -20,7 +19,6 @@ async function loadAdminAccountOverview() {
     console.error('Error loading admin stats:', e);
   }
 
-  // Load Pending Reports
   try {
     const reportsRes = await fetch('/api/reports.php?status=pending');
     if (reportsRes.ok) {
@@ -58,7 +56,6 @@ async function loadAdminAccountOverview() {
     }
   } catch (e) {}
 
-  // Load Pending Claims
   try {
     const claimsRes = await fetch('/api/claims.php?status=pending');
     if (claimsRes.ok) {

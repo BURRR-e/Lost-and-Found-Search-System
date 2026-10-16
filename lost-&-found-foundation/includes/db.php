@@ -182,7 +182,6 @@ class FileDbAdapter {
 
         $items = $this->data[$table] ?? [];
 
-        // Join reports if claims requested
         if ($table === 'claims') {
             $reportsMap = [];
             foreach ($this->data['reports'] ?? [] as $r) {
@@ -197,7 +196,6 @@ class FileDbAdapter {
             }
         }
 
-        // Filtering
         $search = $params[':search'] ?? null;
         $status = $params[':status'] ?? $params[':status_type'] ?? null;
         $category = $params[':category'] ?? null;
@@ -233,10 +231,8 @@ class FileDbAdapter {
             return true;
         });
 
-        // Sorting
         $filtered = array_reverse(array_values($filtered));
 
-        // Limit
         if (preg_match('/LIMIT\s+(\d+)/i', $sql, $m)) {
             $limit = (int)$m[1];
             $filtered = array_slice($filtered, 0, $limit);
@@ -358,7 +354,6 @@ function getDbConnection(): PDO|FileDbAdapter {
             ensureSchemaInitialized($conn);
             return $conn;
         } catch (PDOException $ex) {
-            // Fall back to JSON file database adapter
             $storePath = __DIR__ . '/../db/store.json';
             $conn = new FileDbAdapter($storePath);
             return $conn;
