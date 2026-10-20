@@ -5,16 +5,40 @@ header('Content-Type: application/json; charset=utf-8');
 
 $pdo = getDbConnection();
 
-$lostCount = (int)$pdo->query("SELECT COUNT(*) FROM reports WHERE report_type = 'lost' AND status IN ('pending', 'confirmed')")->fetchColumn();
-$foundCount = (int)$pdo->query("SELECT COUNT(*) FROM reports WHERE report_type = 'found' AND status IN ('pending', 'confirmed')")->fetchColumn();
-$returnedCount = (int)$pdo->query("SELECT COUNT(*) FROM reports WHERE status IN ('returned', 'claimed')")->fetchColumn();
+// Counted in PHP (instead of COUNT/GROUP BY) so this works with both MySQL and the JSON fallback.
+$reports = $pdo->query("SELECT id, status, report_type, category FROM reports")->fetchAll();
+$claims  = $pdo->query("SELECT id, status FROM claims")->fetchAll();
 
-$pendingReports = (int)$pdo->query("SELECT COUNT(*) FROM reports WHERE status = 'pending'")->fetchColumn();
-$pendingClaims = (int)$pdo->query("SELECT COUNT(*) FROM claims WHERE status = 'pending'")->fetchColumn();
-$totalClaims = (int)$pdo->query("SELECT COUNT(*) FROM claims")->fetchColumn();
+$lostCount = $foundCount = $returnedCount = $pendingReports = 0;
+$categories = [];
 
-$catStmt = $pdo->query("SELECT category, COUNT(*) as total FROM reports GROUP BY category");
-$categoryBreakdown = $catStmt->fetchAll();
+foreach ($reports as $r) {
+    $status = $r['status'] ?? '';
+    $type   = $r['report_type'] ?? '';
+
+    // Open, publicly visible items only (pending ones are still awaiting staff review).
+    if ($status === 'confirmed') {
+        if ($type === 'lost')  $lostCount++;
+        if ($type === 'found') $foundCount++;
+    }
+    if ($status === 'returned' || $status === 'claimed') $returnedCount++;
+    if ($status === 'pending') $pendingReports++;
+
+    if (in_array($status, ['confirmed', 'claimed', 'returned'], true)) {
+        $cat = $r['category'] ?? 'others';
+        $categories[$cat] = ($categories[$cat] ?? 0) + 1;
+    }
+}
+
+$pendingClaims = 0;
+foreach ($claims as $c) {
+    if (($c['status'] ?? '') === 'pending') $pendingClaims++;
+}
+
+$categoryBreakdown = [];
+foreach ($categories as $cat => $total) {
+    $categoryBreakdown[] = ['category' => $cat, 'total' => $total];
+}
 
 jsonResponse([
     'success' => true,
@@ -24,7 +48,7 @@ jsonResponse([
         'returned_items'  => $returnedCount,
         'pending_reports' => $pendingReports,
         'pending_claims'  => $pendingClaims,
-        'total_claims'    => $totalClaims,
+        'total_claims'    => count($claims),
         'categories'      => $categoryBreakdown
     ]
 ]);

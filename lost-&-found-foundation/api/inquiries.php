@@ -21,7 +21,7 @@ switch ($method) {
         jsonResponse(['error' => 'Method Not Allowed'], 405);
 }
 
-function handleGetInquiries(PDO $pdo): void {
+function handleGetInquiries(PDO|FileDbAdapter $pdo): void {
     $sql = "SELECT id, full_name, email, subject, message, status, created_at FROM inquiries ORDER BY id DESC";
     $stmt = $pdo->query($sql);
     $inquiries = $stmt->fetchAll();
@@ -29,7 +29,7 @@ function handleGetInquiries(PDO $pdo): void {
     jsonResponse(['success' => true, 'data' => $inquiries]);
 }
 
-function handleCreateInquiry(PDO $pdo): void {
+function handleCreateInquiry(PDO|FileDbAdapter $pdo): void {
     $input = getJsonInput();
 
     $fullName = trim($input['name'] ?? $input['full_name'] ?? '');
@@ -58,7 +58,7 @@ function handleCreateInquiry(PDO $pdo): void {
     ], 201);
 }
 
-function handleUpdateInquiry(PDO $pdo): void {
+function handleUpdateInquiry(PDO|FileDbAdapter $pdo): void {
     $input = getJsonInput();
     $id     = $input['id'] ?? null;
     $status = $input['status'] ?? null;

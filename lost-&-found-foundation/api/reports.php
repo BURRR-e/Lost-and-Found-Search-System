@@ -24,7 +24,7 @@ switch ($method) {
         jsonResponse(['error' => 'Method Not Allowed'], 405);
 }
 
-function handleGetReports(PDO $pdo): void {
+function handleGetReports(PDO|FileDbAdapter $pdo): void {
     $status   = strtolower(trim($_GET['status'] ?? 'all'));
     $search   = trim($_GET['search'] ?? '');
     $category = trim($_GET['category'] ?? '');
@@ -36,9 +36,9 @@ function handleGetReports(PDO $pdo): void {
 
     if ($status !== 'all' && !empty($status)) {
         if ($status === 'dashboard') {
-            $whereClause[] = "status IN ('confirmed', 'pending', 'claimed', 'returned') AND status != 'rejected'";
+            $whereClause[] = "status IN ('confirmed', 'claimed', 'returned')";
         } elseif ($status === 'lost' || $status === 'found') {
-            $whereClause[] = "report_type = :status_type AND status != 'rejected'";
+            $whereClause[] = "report_type = :status_type AND status IN ('confirmed', 'claimed', 'returned')";
             $params[':status_type'] = $status;
         } else {
             $whereClause[] = "status = :status";
@@ -57,13 +57,14 @@ function handleGetReports(PDO $pdo): void {
     }
 
     if (!empty($search)) {
-        $whereClause[] = "(item_name LIKE :search OR description LIKE :search OR location LIKE :search OR report_id LIKE :search)";
-        $params[':search'] = '%' . $search . '%';
+        $whereClause[] = "(item_name LIKE :s1 OR description LIKE :s2 OR location LIKE :s3 OR report_id LIKE :s4)";
+        $like = '%' . $search . '%';
+        $params[':s1'] = $params[':s2'] = $params[':s3'] = $params[':s4'] = $like;
     }
 
-    $sql = "SELECT id, report_id, item_name, category, description, date_event, location, photo_url, status, report_type, created_at 
-            FROM reports 
-            WHERE " . implode(' AND ', $whereClause) . " 
+    $sql = "SELECT id, report_id, item_name, category, description, date_event, location, photo_url, status, report_type, created_at
+            FROM reports
+            WHERE " . implode(' AND ', $whereClause) . "
             ORDER BY id DESC";
 
     if ($limit > 0) {
@@ -80,7 +81,7 @@ function handleGetReports(PDO $pdo): void {
     }
 }
 
-function handleCreateReport(PDO $pdo): void {
+function handleCreateReport(PDO|FileDbAdapter $pdo): void {
     $input = getJsonInput();
 
     $itemName    = trim($input['item-name'] ?? $input['itemName'] ?? $input['item_name'] ?? $_POST['item-name'] ?? $_POST['item_name'] ?? '');
@@ -92,6 +93,15 @@ function handleCreateReport(PDO $pdo): void {
 
     if (empty($itemName)) {
         jsonResponse(['error' => 'Item name is required.'], 400);
+    }
+
+    $reportType = strtolower($reportType);
+    if (!in_array($reportType, ['lost', 'found'], true)) {
+        $reportType = 'lost';
+    }
+    $validCategories = ['school-supplies', 'electronics', 'personal-belongings', 'clothing', 'others'];
+    if (!in_array($category, $validCategories, true)) {
+        $category = 'others';
     }
 
     $photoUrl = '';
@@ -130,15 +140,19 @@ function handleCreateReport(PDO $pdo): void {
         $photoUrl = $categoryImages[$category] ?? '/assets/category/others.png';
     }
 
-    $todayStr = date('mdY');
-    $countStmt = $pdo->prepare("SELECT COUNT(*) FROM reports WHERE DATE(created_at) = CURDATE()");
-    $countStmt->execute();
-    $todayCount = (int)$countStmt->fetchColumn() + 1;
-    $reportId = sprintf("R-%s-#%03d", $todayStr, $todayCount);
+    $prefix = 'R-' . date('mdY') . '-#';
+    $maxSeq = 0;
+    foreach ($pdo->query("SELECT report_id FROM reports")->fetchAll() as $row) {
+        if (str_starts_with($row['report_id'], $prefix)) {
+            $maxSeq = max($maxSeq, (int)substr($row['report_id'], strlen($prefix)));
+        }
+    }
+    $reportId = sprintf("%s%03d", $prefix, $maxSeq + 1);
 
     $sql = "INSERT INTO reports (report_id, item_name, category, description, date_event, location, photo_url, status, report_type)
             VALUES (:report_id, :item_name, :category, :description, :date_event, :location, :photo_url, 'confirmed', :report_type)";
 
+    try {
     $stmt = $pdo->prepare($sql);
     $stmt->execute([
         ':report_id'   => $reportId,
@@ -150,6 +164,9 @@ function handleCreateReport(PDO $pdo): void {
         ':photo_url'   => $photoUrl,
         ':report_type' => $reportType
     ]);
+    } catch (Throwable $e) {
+        jsonResponse(['success' => false, 'error' => 'Could not save report: ' . $e->getMessage()], 500);
+    }
 
     $insertedId = $pdo->lastInsertId();
 
@@ -171,7 +188,7 @@ function handleCreateReport(PDO $pdo): void {
     ], 201);
 }
 
-function handleUpdateReport(PDO $pdo): void {
+function handleUpdateReport(PDO|FileDbAdapter $pdo): void {
     $input = getJsonInput();
 
     $id       = $input['id'] ?? null;
@@ -202,7 +219,7 @@ function handleUpdateReport(PDO $pdo): void {
     jsonResponse(['success' => true, 'message' => 'Report updated successfully.']);
 }
 
-function handleDeleteReport(PDO $pdo): void {
+function handleDeleteReport(PDO|FileDbAdapter $pdo): void {
     $input = getJsonInput();
     $id       = $_GET['id'] ?? $input['id'] ?? null;
     $reportId = $_GET['report_id'] ?? $input['report_id'] ?? null;

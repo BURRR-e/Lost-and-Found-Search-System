@@ -6,17 +6,27 @@
 class DbStatement {
     private array $data;
     private int $position = 0;
+    /** @var callable|null */
+    private $runner;
 
-    public function __construct(array $data) {
+    public function __construct(array $data = [], ?callable $runner = null) {
         $this->data = $data;
+        $this->runner = $runner;
     }
 
+    // The query runs here (not in prepare) so bound params are actually used.
     public function execute(?array $params = null): bool {
+        if ($this->runner !== null) {
+            $this->data = ($this->runner)($params ?? []);
+            $this->position = 0;
+        }
         return true;
     }
 
     public function fetchAll(): array {
-        return $this->data;
+        $rest = array_slice($this->data, $this->position);
+        $this->position = count($this->data);
+        return $rest;
     }
 
     public function fetch(): array|false {
@@ -40,6 +50,8 @@ class DbStatement {
 }
 
 class FileDbAdapter {
+    private const TABLES = ['users', 'reports', 'claims', 'inquiries'];
+
     private string $filePath;
     private array $data = [];
     private int $lastId = 0;
@@ -50,13 +62,22 @@ class FileDbAdapter {
     }
 
     private function load(): void {
+        $loaded = null;
         if (file_exists($this->filePath)) {
-            $content = file_get_contents($this->filePath);
-            $this->data = json_decode($content, true) ?: [];
+            $loaded = json_decode((string)file_get_contents($this->filePath), true);
         }
 
-        if (empty($this->data['reports'])) {
+        // Only seed when there is no valid store (not when all reports were deleted).
+        if (!is_array($loaded) || !isset($loaded['reports'])) {
             $this->seed();
+            return;
+        }
+
+        $this->data = $loaded;
+        foreach (self::TABLES as $t) {
+            if (!isset($this->data[$t])) {
+                $this->data[$t] = [];
+            }
         }
     }
 
@@ -138,118 +159,169 @@ class FileDbAdapter {
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
-        file_put_contents($this->filePath, json_encode($this->data, JSON_PRETTY_PRINT));
+        file_put_contents($this->filePath, json_encode($this->data, JSON_PRETTY_PRINT), LOCK_EX);
     }
 
     public function lastInsertId(): int {
         return $this->lastId;
     }
 
+    // prepare() no longer runs the query: it runs on execute() with the bound params.
     public function prepare(string $sql): DbStatement {
-        return $this->executeSql($sql, []);
+        return new DbStatement([], fn(array $p) => $this->runSql($sql, $p));
     }
 
     public function query(string $sql): DbStatement {
-        return $this->executeSql($sql, []);
+        $stmt = $this->prepare($sql);
+        $stmt->execute();
+        return $stmt;
     }
 
     public function executeSql(string $sql, array $params = []): DbStatement {
+        return new DbStatement($this->runSql($sql, $params));
+    }
+
+    private function runSql(string $sql, array $params): array {
         $sqlTrim = trim($sql);
         $upper = strtoupper($sqlTrim);
 
         if (str_starts_with($upper, 'SELECT')) {
-            return new DbStatement($this->handleSelect($sqlTrim, $params));
+            return $this->handleSelect($sqlTrim, $params);
         } elseif (str_starts_with($upper, 'INSERT')) {
-            return new DbStatement($this->handleInsert($sqlTrim, $params));
+            return $this->handleInsert($sqlTrim, $params);
         } elseif (str_starts_with($upper, 'UPDATE')) {
-            return new DbStatement($this->handleUpdate($sqlTrim, $params));
+            return $this->handleUpdate($sqlTrim, $params);
         } elseif (str_starts_with($upper, 'DELETE')) {
-            return new DbStatement($this->handleDelete($sqlTrim, $params));
+            return $this->handleDelete($sqlTrim, $params);
         }
 
-        return new DbStatement([]);
+        return [];
     }
 
-    private function handleSelect(string $sql, array $params): array {
-        $table = 'reports';
-        if (stripos($sql, 'FROM claims') !== false) {
-            $table = 'claims';
-        } elseif (stripos($sql, 'FROM inquiries') !== false) {
-            $table = 'inquiries';
-        } elseif (stripos($sql, 'FROM users') !== false) {
-            $table = 'users';
-        }
+    // ---- small SQL helpers -------------------------------------------------
 
+    private function tableFrom(string $sql, string $pattern): string {
+        if (preg_match($pattern, $sql, $m) && in_array(strtolower($m[1]), self::TABLES, true)) {
+            return strtolower($m[1]);
+        }
+        return 'reports';
+    }
+
+    private function resolveToken(string $tok, array $params): mixed {
+        if ($tok[0] === ':') return $params[$tok] ?? null;
+        if ($tok[0] === "'") return substr($tok, 1, -1);
+        return strtoupper($tok) === 'NULL' ? null : $tok;
+    }
+
+    private function parseConditions(string $where, array $params): array {
+        preg_match_all("/(\w+)\s*(!=|=)\s*(:\w+|'[^']*')/", $where, $mm, PREG_SET_ORDER);
+        $conds = [];
+        foreach ($mm as $m) {
+            $conds[] = [$m[1], $m[2], $this->resolveToken($m[3], $params)];
+        }
+        return $conds;
+    }
+
+    private function matchesAll(array $item, array $conds): bool {
+        foreach ($conds as [$col, $op, $val]) {
+            $equal = (string)($item[$col] ?? '') === (string)($val ?? '');
+            if ($op === '=' && !$equal) return false;
+            if ($op === '!=' && $equal) return false;
+        }
+        return true;
+    }
+
+    // ---- statements --------------------------------------------------------
+
+    private function handleSelect(string $sql, array $params): array {
+        $table = $this->tableFrom($sql, '/\bFROM\s+(\w+)/i');
         $items = $this->data[$table] ?? [];
 
         if ($table === 'claims') {
             $reportsMap = [];
             foreach ($this->data['reports'] ?? [] as $r) {
-                $reportsMap[$r['id']] = $r;
-                $reportsMap[$r['report_id']] = $r;
+                $reportsMap['id:' . $r['id']] = $r;
+                $reportsMap['code:' . $r['report_id']] = $r;
             }
-            foreach ($items as &$c) {
-                $matched = $reportsMap[$c['report_id'] ?? ''] ?? $reportsMap[$c['report_code'] ?? ''] ?? null;
-                $c['photo_url'] = $matched['photo_url'] ?? '/assets/category/others.png';
-                $c['category'] = $matched['category'] ?? 'others';
+            $items = array_map(function ($c) use ($reportsMap) {
+                $matched = null;
+                if (!empty($c['report_id'])) {
+                    $matched = $reportsMap['id:' . $c['report_id']] ?? null;
+                }
+                if (!$matched && !empty($c['report_code'])) {
+                    $matched = $reportsMap['code:' . $c['report_code']] ?? null;
+                }
+                $c['photo_url']   = $matched['photo_url'] ?? '/assets/category/others.png';
+                $c['category']    = $matched['category'] ?? 'others';
                 $c['description'] = $matched['description'] ?? '';
-            }
+                return $c;
+            }, $items);
         }
 
-        $search = $params[':search'] ?? null;
-        $status = $params[':status'] ?? $params[':status_type'] ?? null;
-        $category = $params[':category'] ?? null;
-        $email = $params[':email'] ?? null;
+        // status IN (...) / status NOT IN (...) written as literals in the SQL
+        $statusIn = $statusNotIn = null;
+        if (preg_match('/\bstatus\s+NOT\s+IN\s*\(([^)]*)\)/i', $sql, $m)) {
+            preg_match_all("/'([^']*)'/", $m[1], $v);
+            $statusNotIn = $v[1];
+        }
+        if (preg_match('/\bstatus\s+IN\s*\(([^)]*)\)/i', $sql, $m)) {
+            preg_match_all("/'([^']*)'/", $m[1], $v);
+            $statusIn = $v[1];
+        }
 
-        $filtered = array_filter($items, function($item) use ($sql, $search, $status, $category, $email) {
-            if (stripos($sql, "status IN ('confirmed', 'pending', 'claimed', 'returned')") !== false) {
-                if (($item['status'] ?? '') === 'rejected') return false;
-            } elseif ($status && isset($item['status']) && strtolower($item['status']) !== strtolower($status) && strtolower($item['report_type'] ?? '') !== strtolower($status)) {
-                return false;
-            }
+        $search     = $params[':s1'] ?? $params[':search'] ?? null;
+        $status     = $params[':status'] ?? null;
+        $reportType = $params[':status_type'] ?? $params[':type'] ?? null;
+        $category   = $params[':category'] ?? null;
+        $email      = $params[':email'] ?? null;
+        $id         = $params[':id'] ?? null;
+        $claimId    = $params[':claim_id'] ?? null;
+        $code       = $params[':code'] ?? null;
+        $cleanSearch = $search !== null ? strtolower(trim($search, '%')) : '';
 
-            if ($category && isset($item['category']) && strtolower($item['category']) !== strtolower($category)) {
-                return false;
-            }
+        $filtered = [];
+        foreach ($items as $item) {
+            $itemStatus = strtolower((string)($item['status'] ?? ''));
 
-            if ($email && isset($item['email']) && strtolower($item['email']) !== strtolower($email)) {
-                return false;
-            }
+            if ($statusIn !== null && !in_array($itemStatus, $statusIn, true)) continue;
+            if ($statusNotIn !== null && in_array($itemStatus, $statusNotIn, true)) continue;
+            if ($status !== null && $itemStatus !== strtolower($status)) continue;
+            if ($reportType !== null && strtolower((string)($item['report_type'] ?? '')) !== strtolower($reportType)) continue;
+            if ($category !== null && strtolower((string)($item['category'] ?? '')) !== strtolower($category)) continue;
+            if ($email !== null && strtolower((string)($item['email'] ?? '')) !== strtolower($email)) continue;
+            if ($id !== null && (string)($item['id'] ?? '') !== (string)$id) continue;
+            if ($claimId !== null && (string)($item['claim_id'] ?? '') !== (string)$claimId) continue;
+            if ($code !== null && (string)($item['report_id'] ?? '') !== (string)$code) continue;
 
-            if ($search) {
-                $cleanSearch = strtolower(trim($search, '%'));
+            if ($cleanSearch !== '') {
                 $match = false;
                 foreach (['item_name', 'description', 'location', 'report_id', 'claim_id'] as $field) {
-                    if (isset($item[$field]) && str_contains(strtolower($item[$field]), $cleanSearch)) {
+                    if (isset($item[$field]) && str_contains(strtolower((string)$item[$field]), $cleanSearch)) {
                         $match = true;
                         break;
                     }
                 }
-                if (!$match) return false;
+                if (!$match) continue;
             }
 
-            return true;
-        });
+            $filtered[] = $item;
+        }
 
-        $filtered = array_reverse(array_values($filtered));
+        if (preg_match('/^SELECT\s+COUNT\(\*\)/i', $sql)) {
+            return [['count' => count($filtered)]];
+        }
+
+        $filtered = array_reverse($filtered); // ORDER BY id DESC
 
         if (preg_match('/LIMIT\s+(\d+)/i', $sql, $m)) {
-            $limit = (int)$m[1];
-            $filtered = array_slice($filtered, 0, $limit);
+            $filtered = array_slice($filtered, 0, (int)$m[1]);
         }
 
         return $filtered;
     }
 
     private function handleInsert(string $sql, array $params): array {
-        $table = 'reports';
-        if (stripos($sql, 'INTO claims') !== false) {
-            $table = 'claims';
-        } elseif (stripos($sql, 'INTO inquiries') !== false) {
-            $table = 'inquiries';
-        } elseif (stripos($sql, 'INTO users') !== false) {
-            $table = 'users';
-        }
+        $table = $this->tableFrom($sql, '/\bINTO\s+(\w+)/i');
 
         $maxId = 0;
         foreach ($this->data[$table] ?? [] as $row) {
@@ -258,11 +330,24 @@ class FileDbAdapter {
         $newId = $maxId + 1;
         $this->lastId = $newId;
 
-        $record = ['id' => $newId, 'created_at' => date('Y-m-d H:i:s')];
-        foreach ($params as $k => $v) {
-            $fieldName = ltrim($k, ':');
-            $record[$fieldName] = $v;
+        // Map columns to values by position, so column names don't have to match
+        // param names and literal values ('pending', 'Student', ...) are kept.
+        $values = [];
+        if (preg_match('/\(([^)]*)\)\s*VALUES\s*\((.*)\)\s*$/is', $sql, $m)) {
+            $cols = array_map('trim', explode(',', $m[1]));
+            preg_match_all("/:\w+|'[^']*'|[^\s,]+/", $m[2], $vm);
+            foreach ($cols as $i => $col) {
+                if (isset($vm[0][$i])) {
+                    $values[$col] = $this->resolveToken($vm[0][$i], $params);
+                }
+            }
+        } else {
+            foreach ($params as $k => $v) {
+                $values[ltrim($k, ':')] = $v;
+            }
         }
+
+        $record = array_merge(['id' => $newId, 'created_at' => date('Y-m-d H:i:s')], $values);
 
         $this->data[$table][] = $record;
         $this->save();
@@ -271,52 +356,52 @@ class FileDbAdapter {
     }
 
     private function handleUpdate(string $sql, array $params): array {
-        $table = 'reports';
-        if (stripos($sql, 'claims') !== false) {
-            $table = 'claims';
-        } elseif (stripos($sql, 'inquiries') !== false) {
-            $table = 'inquiries';
-        } elseif (stripos($sql, 'users') !== false) {
-            $table = 'users';
+        $table = $this->tableFrom($sql, '/^UPDATE\s+(\w+)/i');
+
+        if (!preg_match('/\bSET\s+(.*?)\s+WHERE\s+(.*)$/is', $sql, $m)) {
+            return [];
         }
 
-        $id = $params[':id'] ?? $params[':rid'] ?? null;
-        $code = $params[':report_id'] ?? $params[':claim_id'] ?? $params[':rcode'] ?? $params[':code'] ?? null;
-        $status = $params[':status'] ?? $params[':st'] ?? null;
+        preg_match_all("/(\w+)\s*=\s*(:\w+|'[^']*')/", $m[1], $am, PREG_SET_ORDER);
+        $assign = [];
+        foreach ($am as $a) {
+            $assign[$a[1]] = $this->resolveToken($a[2], $params);
+        }
 
-        if (isset($this->data[$table])) {
-            foreach ($this->data[$table] as &$item) {
-                if (($id && ($item['id'] ?? null) == $id) || ($code && (($item['report_id'] ?? '') == $code || ($item['claim_id'] ?? '') == $code))) {
-                    if ($status) $item['status'] = $status;
-                    if (isset($params[':feedback'])) $item['staff_feedback'] = $params[':feedback'];
-                    if (isset($params[':name'])) $item['full_name'] = $params[':name'];
+        $conds = $this->parseConditions($m[2], $params);
+        if (empty($conds) || empty($assign)) {
+            return []; // never update every row by accident
+        }
+
+        foreach ($this->data[$table] as $i => $item) {
+            if ($this->matchesAll($item, $conds)) {
+                foreach ($assign as $col => $val) {
+                    $this->data[$table][$i][$col] = $val;
                 }
             }
-            $this->save();
         }
+        $this->save();
 
         return [];
     }
 
     private function handleDelete(string $sql, array $params): array {
-        $table = 'reports';
-        if (stripos($sql, 'FROM claims') !== false) {
-            $table = 'claims';
-        } elseif (stripos($sql, 'FROM inquiries') !== false) {
-            $table = 'inquiries';
+        $table = $this->tableFrom($sql, '/\bFROM\s+(\w+)/i');
+
+        if (!preg_match('/\bWHERE\s+(.*)$/is', $sql, $m)) {
+            return [];
         }
 
-        $id = $params[':id'] ?? null;
-        $code = $params[':claim_id'] ?? $params[':report_id'] ?? null;
-
-        if (isset($this->data[$table])) {
-            $this->data[$table] = array_values(array_filter($this->data[$table], function($item) use ($id, $code) {
-                if ($id && ($item['id'] ?? null) == $id) return false;
-                if ($code && (($item['claim_id'] ?? '') == $code || ($item['report_id'] ?? '') == $code)) return false;
-                return true;
-            }));
-            $this->save();
+        $conds = $this->parseConditions($m[1], $params);
+        if (empty($conds)) {
+            return [];
         }
+
+        $this->data[$table] = array_values(array_filter(
+            $this->data[$table],
+            fn($item) => !$this->matchesAll($item, $conds)
+        ));
+        $this->save();
 
         return [];
     }

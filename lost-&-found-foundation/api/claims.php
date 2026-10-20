@@ -24,7 +24,7 @@ switch ($method) {
         jsonResponse(['error' => 'Method Not Allowed'], 405);
 }
 
-function handleGetClaims(PDO $pdo): void {
+function handleGetClaims(PDO|FileDbAdapter $pdo): void {
     $status = $_GET['status'] ?? 'all';
     $email  = trim($_GET['email'] ?? '');
 
@@ -60,7 +60,7 @@ function handleGetClaims(PDO $pdo): void {
     }
 }
 
-function handleCreateClaim(PDO $pdo): void {
+function handleCreateClaim(PDO|FileDbAdapter $pdo): void {
     $input = getJsonInput();
 
     $reportCode  = trim($input['report_code'] ?? $input['reportCode'] ?? '');
@@ -72,19 +72,29 @@ function handleCreateClaim(PDO $pdo): void {
     if (empty($reportCode) && empty($itemName)) {
         jsonResponse(['error' => 'Item information or Report Code is required.'], 400);
     }
-    $countStmt = $pdo->query("SELECT COUNT(*) FROM claims");
-    $nextNum = (int)$countStmt->fetchColumn() + 1;
-    $claimId = sprintf("CLM-%03d", $nextNum);
+    // Use the highest existing number (COUNT+1 collides with UNIQUE claim_id after a cancel).
+    $maxNum = 0;
+    foreach ($pdo->query("SELECT claim_id FROM claims")->fetchAll() as $row) {
+        if (preg_match('/^CLM-(\d+)$/', $row['claim_id'], $m)) {
+            $maxNum = max($maxNum, (int)$m[1]);
+        }
+    }
+    $claimId = sprintf("CLM-%03d", $maxNum + 1);
+
     $reportDbId = null;
     if (!empty($reportCode)) {
-        $rStmt = $pdo->prepare("SELECT id, item_name FROM reports WHERE report_id = :code");
+        $rStmt = $pdo->prepare("SELECT id, item_name, status FROM reports WHERE report_id = :code");
         $rStmt->execute([':code' => $reportCode]);
         $reportRow = $rStmt->fetch();
-        if ($reportRow) {
-            $reportDbId = $reportRow['id'];
-            if (empty($itemName)) {
-                $itemName = $reportRow['item_name'];
-            }
+        if (!$reportRow) {
+            jsonResponse(['error' => 'Report not found.'], 404);
+        }
+        if (($reportRow['status'] ?? '') !== 'confirmed') {
+            jsonResponse(['error' => 'This item is no longer available to claim.'], 409);
+        }
+        $reportDbId = $reportRow['id'];
+        if (empty($itemName)) {
+            $itemName = $reportRow['item_name'];
         }
     }
 
@@ -122,7 +132,7 @@ function handleCreateClaim(PDO $pdo): void {
     ], 201);
 }
 
-function handleUpdateClaim(PDO $pdo): void {
+function handleUpdateClaim(PDO|FileDbAdapter $pdo): void {
     $input = getJsonInput();
 
     $id            = $input['id'] ?? null;
@@ -162,28 +172,24 @@ function handleUpdateClaim(PDO $pdo): void {
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
 
-    if ($status === 'approved' || $status === 'completed') {
-        $targetReportStatus = ($status === 'completed') ? 'returned' : 'claimed';
-        if ($claimId || $id) {
-            $cStmt = $pdo->prepare("SELECT report_id, report_code FROM claims WHERE " . ($id ? "id = :id" : "claim_id = :claim_id"));
-            $cStmt->execute($id ? [':id' => $id] : [':claim_id' => $claimId]);
-            $cRow = $cStmt->fetch();
-            if ($cRow) {
-                if ($cRow['report_id']) {
-                    $upStmt = $pdo->prepare("UPDATE reports SET status = :st WHERE id = :rid");
-                    $upStmt->execute([':st' => $targetReportStatus, ':rid' => $cRow['report_id']]);
-                } elseif ($cRow['report_code']) {
-                    $upStmt = $pdo->prepare("UPDATE reports SET status = :st WHERE report_id = :rcode");
-                    $upStmt->execute([':st' => $targetReportStatus, ':rcode' => $cRow['report_code']]);
-                }
-            }
+    $cStmt = $pdo->prepare("SELECT report_id, report_code FROM claims WHERE " . ($id ? "id = :id" : "claim_id = :claim_id"));
+    $cStmt->execute($id ? [':id' => $id] : [':claim_id' => $claimId]);
+    $cRow = $cStmt->fetch();
+    if ($cRow) {
+        if ($status === 'approved') {
+            setReportStatusForClaim($pdo, $cRow, 'claimed');
+        } elseif ($status === 'completed') {
+            setReportStatusForClaim($pdo, $cRow, 'returned');
+        } elseif ($status === 'rejected') {
+            // Rejected claim: put the item back on the dashboard so others can claim it.
+            setReportStatusForClaim($pdo, $cRow, 'confirmed', 'claimed');
         }
     }
 
     jsonResponse(['success' => true, 'message' => 'Claim request updated successfully.']);
 }
 
-function handleDeleteClaim(PDO $pdo): void {
+function handleDeleteClaim(PDO|FileDbAdapter $pdo): void {
     $input = getJsonInput();
     $id      = $_GET['id'] ?? $input['id'] ?? null;
     $claimId = $_GET['claim_id'] ?? $input['claim_id'] ?? null;
@@ -197,13 +203,7 @@ function handleDeleteClaim(PDO $pdo): void {
     $cRow = $cStmt->fetch();
 
     if ($cRow) {
-        if ($cRow['report_id']) {
-            $upStmt = $pdo->prepare("UPDATE reports SET status = 'confirmed' WHERE id = :rid AND status = 'claimed'");
-            $upStmt->execute([':rid' => $cRow['report_id']]);
-        } elseif ($cRow['report_code']) {
-            $upStmt = $pdo->prepare("UPDATE reports SET status = 'confirmed' WHERE report_id = :rcode AND status = 'claimed'");
-            $upStmt->execute([':rcode' => $cRow['report_code']]);
-        }
+        setReportStatusForClaim($pdo, $cRow, 'confirmed', 'claimed');
     }
 
     if ($id) {
@@ -215,4 +215,20 @@ function handleDeleteClaim(PDO $pdo): void {
     }
 
     jsonResponse(['success' => true, 'message' => 'Claim request cancelled/removed successfully.']);
+}
+
+/**
+ * Set the status of the report linked to a claim row (by numeric id, else by report code).
+ * $onlyIfCurrent restricts the change to reports currently in that status.
+ */
+function setReportStatusForClaim(PDO|FileDbAdapter $pdo, array $cRow, string $newStatus, ?string $onlyIfCurrent = null): void {
+    $cond = $onlyIfCurrent !== null ? " AND status = '" . $onlyIfCurrent . "'" : '';
+
+    if (!empty($cRow['report_id'])) {
+        $st = $pdo->prepare("UPDATE reports SET status = :st WHERE id = :rid" . $cond);
+        $st->execute([':st' => $newStatus, ':rid' => $cRow['report_id']]);
+    } elseif (!empty($cRow['report_code'])) {
+        $st = $pdo->prepare("UPDATE reports SET status = :st WHERE report_id = :rcode" . $cond);
+        $st->execute([':st' => $newStatus, ':rcode' => $cRow['report_code']]);
+    }
 }

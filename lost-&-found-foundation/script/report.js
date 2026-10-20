@@ -1,3 +1,4 @@
+(function () {
 const report = document.getElementById('report');
 const confirmation = document.getElementById('confirmation');
 const reportContainer = document.getElementById('report-container');
@@ -12,7 +13,7 @@ const images = {
 
 async function getReports() {
   try {
-    const response = await fetch('/api/reports.php?status=all');
+    const response = await fetch('/api/reports.php?status=dashboard');
     if (!response.ok) return [];
     const json = await response.json();
     return json.success ? json.data : [];
@@ -164,7 +165,7 @@ if (report && confirmation) {
         const result = await res.json();
 
         if (res.ok && result.success) {
-          alert('Report submitted successfully! Waiting for staff review.');
+          alert('Report submitted successfully!');
           if (image.src.startsWith('blob:')) {
             URL.revokeObjectURL(image.src);
           }
@@ -186,3 +187,4 @@ if (report && confirmation) {
 }
 
 displayReports();
+})();

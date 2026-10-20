@@ -1,3 +1,4 @@
+(function () {
 const reportContainer = document.getElementById('report-container');
 
 const images = {
@@ -137,3 +138,4 @@ async function displayReports() {
 }
 
 displayReports();
+})();

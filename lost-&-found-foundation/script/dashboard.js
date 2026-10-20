@@ -1,5 +1,10 @@
+(function () {
 const confirmReport = document.getElementById('confirm-report');
 const searchForm = document.querySelector('form.search');
+
+function getStoredUser() {
+  try { return JSON.parse(localStorage.getItem('lf_user')) || {}; } catch (e) { return {}; }
+}
 
 const images = {
   'school-supplies': '/assets/category/school-supplies.png',
@@ -14,15 +19,15 @@ async function displayConfirmedReports(searchQuery = '', categoryFilter = '', st
 
   try {
     let url = '/api/reports.php?status=dashboard';
-    
+
     if (statusFilter && statusFilter !== '') {
       url = `/api/reports.php?status=${encodeURIComponent(statusFilter)}`;
     }
-    
+
     if (searchQuery) {
       url += `&search=${encodeURIComponent(searchQuery)}`;
     }
-    
+
     if (categoryFilter) {
       url += `&category=${encodeURIComponent(categoryFilter)}`;
     }
@@ -82,15 +87,25 @@ async function displayConfirmedReports(searchQuery = '', categoryFilter = '', st
       claimBtn.textContent = 'Claim Item';
       claimBtn.style.marginTop = '10px';
 
+      // Only items still waiting to be claimed can be claimed.
+      if (report.status !== 'confirmed') {
+        claimBtn.disabled = true;
+        claimBtn.textContent = report.status === 'returned' ? 'Returned' : 'Already Claimed';
+      }
+
       claimBtn.addEventListener('click', async function() {
         if (confirm(`Submit claim request for "${report.item_name}"?`)) {
           try {
+            const user = getStoredUser();
             const claimRes = await fetch('/api/claims.php', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 report_code: report.report_id,
-                item_name: report.item_name
+                item_name: report.item_name,
+                email: user.email,
+                full_name: user.full_name,
+                school_id: user.school_id
               })
             });
             const claimResult = await claimRes.json();
@@ -146,3 +161,4 @@ if (searchForm) {
 }
 
 displayConfirmedReports();
+})();

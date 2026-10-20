@@ -22,7 +22,7 @@ async function loadHomeData() {
   if (!recentContainer) return;
 
   try {
-    const reportsRes = await fetch('/api/reports.php?status=all&limit=6');
+    const reportsRes = await fetch('/api/reports.php?status=dashboard&limit=6');
     if (reportsRes.ok) {
       const reportsData = await reportsRes.json();
       if (reportsData.success) {

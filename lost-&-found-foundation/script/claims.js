@@ -3,7 +3,10 @@ async function loadUserClaims() {
   if (!claimsContainer) return;
 
   try {
-    const res = await fetch('/api/claims.php?status=all');
+    let storedEmail = '';
+    try { storedEmail = (JSON.parse(localStorage.getItem('lf_user')) || {}).email || ''; } catch (e) {}
+    const email = storedEmail || 'user@school.edu';
+    const res = await fetch('/api/claims.php?status=all&email=' + encodeURIComponent(email));
     if (!res.ok) {
       claimsContainer.innerHTML = '<p>Unable to load claim requests.</p>';
       return;

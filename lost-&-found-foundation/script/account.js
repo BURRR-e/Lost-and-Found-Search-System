@@ -1,12 +1,22 @@
+function getStoredUser() {
+  try { return JSON.parse(localStorage.getItem('lf_user')) || {}; } catch (e) { return {}; }
+}
+
+function saveStoredUser(user) {
+  try { localStorage.setItem('lf_user', JSON.stringify(user)); } catch (e) {}
+}
+
 async function loadAccountData() {
   try {
-    const res = await fetch('/api/account.php');
+    const stored = getStoredUser();
+    const res = await fetch('/api/account.php' + (stored.email ? '?email=' + encodeURIComponent(stored.email) : ''));
     if (!res.ok) return;
 
     const result = await res.json();
     if (!result.success) return;
 
     const data = result.data;
+    saveStoredUser({ email: data.email, full_name: data.full_name, school_id: data.school_id });
 
     const profileDiv = document.querySelector('body > div:nth-of-type(2)');
     if (profileDiv) {
@@ -61,6 +71,7 @@ if (profileForm) {
 
       const result = await res.json();
       if (res.ok && result.success) {
+        saveStoredUser({ ...getStoredUser(), email, full_name: fullName });
         alert('Profile updated successfully!');
         loadAccountData();
       } else {

@@ -1,3 +1,4 @@
+(function () {
 const claimsContainer = document.getElementById('claims-container');
 
 async function loadClaims() {
@@ -112,3 +113,4 @@ async function updateClaimStatus(id, status, feedback) {
 
 document.addEventListener('DOMContentLoaded', loadClaims);
 loadClaims();
+})();

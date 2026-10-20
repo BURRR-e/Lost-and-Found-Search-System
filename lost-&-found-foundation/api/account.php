@@ -18,7 +18,7 @@ switch ($method) {
         jsonResponse(['error' => 'Method Not Allowed'], 405);
 }
 
-function handleGetAccount(PDO $pdo): void {
+function handleGetAccount(PDO|FileDbAdapter $pdo): void {
     $email = $_GET['email'] ?? 'user@school.edu';
 
     $stmt = $pdo->prepare("SELECT id, full_name, email, school_id, role, created_at FROM users WHERE email = :email");
@@ -55,12 +55,12 @@ function handleGetAccount(PDO $pdo): void {
     jsonResponse(['success' => true, 'data' => $user]);
 }
 
-function handleUpdateAccount(PDO $pdo): void {
+function handleUpdateAccount(PDO|FileDbAdapter $pdo): void {
     $input = getJsonInput();
 
     $fullName = trim($input['full-name'] ?? $input['full_name'] ?? '');
     $email    = trim($input['account-email'] ?? $input['email'] ?? '');
-    $schoolId = trim($input['school_id'] ?? '000000');
+    $schoolId = isset($input['school_id']) ? trim($input['school_id']) : '';
 
     if (empty($fullName) || empty($email)) {
         jsonResponse(['error' => 'Full Name and Email Address are required.'], 400);
@@ -71,11 +71,17 @@ function handleUpdateAccount(PDO $pdo): void {
     $existing = $checkStmt->fetch();
 
     if ($existing) {
-        $stmt = $pdo->prepare("UPDATE users SET full_name = :name, school_id = :school_id WHERE id = :id");
-        $stmt->execute([':name' => $fullName, ':school_id' => $schoolId, ':id' => $existing['id']]);
+        if ($schoolId !== '') {
+            $stmt = $pdo->prepare("UPDATE users SET full_name = :name, school_id = :school_id WHERE id = :id");
+            $stmt->execute([':name' => $fullName, ':school_id' => $schoolId, ':id' => $existing['id']]);
+        } else {
+            // Don't wipe the saved School ID when the form doesn't send one.
+            $stmt = $pdo->prepare("UPDATE users SET full_name = :name WHERE id = :id");
+            $stmt->execute([':name' => $fullName, ':id' => $existing['id']]);
+        }
     } else {
         $stmt = $pdo->prepare("INSERT INTO users (full_name, email, school_id, role) VALUES (:name, :email, :school_id, 'Student')");
-        $stmt->execute([':name' => $fullName, ':email' => $email, ':school_id' => $schoolId]);
+        $stmt->execute([':name' => $fullName, ':email' => $email, ':school_id' => $schoolId !== '' ? $schoolId : '000000']);
     }
 
     jsonResponse(['success' => true, 'message' => 'Profile updated successfully.']);
