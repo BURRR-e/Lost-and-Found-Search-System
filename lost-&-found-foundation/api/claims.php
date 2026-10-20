@@ -72,7 +72,6 @@ function handleCreateClaim(PDO|FileDbAdapter $pdo): void {
     if (empty($reportCode) && empty($itemName)) {
         jsonResponse(['error' => 'Item information or Report Code is required.'], 400);
     }
-    // Use the highest existing number (COUNT+1 collides with UNIQUE claim_id after a cancel).
     $maxNum = 0;
     foreach ($pdo->query("SELECT claim_id FROM claims")->fetchAll() as $row) {
         if (preg_match('/^CLM-(\d+)$/', $row['claim_id'], $m)) {
@@ -181,7 +180,6 @@ function handleUpdateClaim(PDO|FileDbAdapter $pdo): void {
         } elseif ($status === 'completed') {
             setReportStatusForClaim($pdo, $cRow, 'returned');
         } elseif ($status === 'rejected') {
-            // Rejected claim: put the item back on the dashboard so others can claim it.
             setReportStatusForClaim($pdo, $cRow, 'confirmed', 'claimed');
         }
     }

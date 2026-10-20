@@ -14,7 +14,6 @@ class DbStatement {
         $this->runner = $runner;
     }
 
-    // The query runs here (not in prepare) so bound params are actually used.
     public function execute(?array $params = null): bool {
         if ($this->runner !== null) {
             $this->data = ($this->runner)($params ?? []);
@@ -67,7 +66,6 @@ class FileDbAdapter {
             $loaded = json_decode((string)file_get_contents($this->filePath), true);
         }
 
-        // Only seed when there is no valid store (not when all reports were deleted).
         if (!is_array($loaded) || !isset($loaded['reports'])) {
             $this->seed();
             return;
@@ -166,7 +164,6 @@ class FileDbAdapter {
         return $this->lastId;
     }
 
-    // prepare() no longer runs the query: it runs on execute() with the bound params.
     public function prepare(string $sql): DbStatement {
         return new DbStatement([], fn(array $p) => $this->runSql($sql, $p));
     }
@@ -258,7 +255,6 @@ class FileDbAdapter {
             }, $items);
         }
 
-        // status IN (...) / status NOT IN (...) written as literals in the SQL
         $statusIn = $statusNotIn = null;
         if (preg_match('/\bstatus\s+NOT\s+IN\s*\(([^)]*)\)/i', $sql, $m)) {
             preg_match_all("/'([^']*)'/", $m[1], $v);
@@ -330,8 +326,6 @@ class FileDbAdapter {
         $newId = $maxId + 1;
         $this->lastId = $newId;
 
-        // Map columns to values by position, so column names don't have to match
-        // param names and literal values ('pending', 'Student', ...) are kept.
         $values = [];
         if (preg_match('/\(([^)]*)\)\s*VALUES\s*\((.*)\)\s*$/is', $sql, $m)) {
             $cols = array_map('trim', explode(',', $m[1]));
@@ -370,7 +364,7 @@ class FileDbAdapter {
 
         $conds = $this->parseConditions($m[2], $params);
         if (empty($conds) || empty($assign)) {
-            return []; // never update every row by accident
+            return [];
         }
 
         foreach ($this->data[$table] as $i => $item) {

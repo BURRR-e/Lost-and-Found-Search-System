@@ -4,8 +4,6 @@ require_once __DIR__ . '/../includes/db.php';
 header('Content-Type: application/json; charset=utf-8');
 
 $pdo = getDbConnection();
-
-// Counted in PHP (instead of COUNT/GROUP BY) so this works with both MySQL and the JSON fallback.
 $reports = $pdo->query("SELECT id, status, report_type, category FROM reports")->fetchAll();
 $claims  = $pdo->query("SELECT id, status FROM claims")->fetchAll();
 
@@ -16,7 +14,6 @@ foreach ($reports as $r) {
     $status = $r['status'] ?? '';
     $type   = $r['report_type'] ?? '';
 
-    // Open, publicly visible items only (pending ones are still awaiting staff review).
     if ($status === 'confirmed') {
         if ($type === 'lost')  $lostCount++;
         if ($type === 'found') $foundCount++;

@@ -75,7 +75,6 @@ function handleUpdateAccount(PDO|FileDbAdapter $pdo): void {
             $stmt = $pdo->prepare("UPDATE users SET full_name = :name, school_id = :school_id WHERE id = :id");
             $stmt->execute([':name' => $fullName, ':school_id' => $schoolId, ':id' => $existing['id']]);
         } else {
-            // Don't wipe the saved School ID when the form doesn't send one.
             $stmt = $pdo->prepare("UPDATE users SET full_name = :name WHERE id = :id");
             $stmt->execute([':name' => $fullName, ':id' => $existing['id']]);
         }

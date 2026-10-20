@@ -87,7 +87,6 @@ async function displayConfirmedReports(searchQuery = '', categoryFilter = '', st
       claimBtn.textContent = 'Claim Item';
       claimBtn.style.marginTop = '10px';
 
-      // Only items still waiting to be claimed can be claimed.
       if (report.status !== 'confirmed') {
         claimBtn.disabled = true;
         claimBtn.textContent = report.status === 'returned' ? 'Returned' : 'Already Claimed';
