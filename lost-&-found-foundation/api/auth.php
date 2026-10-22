@@ -9,7 +9,7 @@ $action = $_GET['action'] ?? '';
 
 if ($method === 'GET' && $action === 'me') {
     $user = currentUser();
-    jsonResponse(['success' => true, 'data' => $user]); // data is null when signed out
+    jsonResponse(['success' => true, 'data' => $user]);
 }
 
 if ($method !== 'POST') {
@@ -26,7 +26,6 @@ switch ($action) {
 }
 
 function normalizeRole(string $role): string {
-    // The users.role column only allows Student / Staff / Admin.
     return in_array(strtolower(trim($role)), ['staff', 'professor'], true) ? 'Staff' : 'Student';
 }
 
@@ -44,7 +43,6 @@ function handleRegister(PDO|FileDbAdapter $pdo, bool $admin): void {
     $password = (string)($in['password'] ?? '');
 
     if ($admin) {
-        // Admin accounts need a secret invite code set on the server (env var).
         $expected = (string)getenv('ADMIN_INVITE_CODE');
         if ($expected === '') {
             jsonResponse(['error' => 'Admin sign-up is disabled: ADMIN_INVITE_CODE is not set on the server.'], 403);
@@ -99,7 +97,7 @@ function handleRegister(PDO|FileDbAdapter $pdo, bool $admin): void {
             ':password_hash' => password_hash($password, PASSWORD_DEFAULT),
         ]);
     } catch (PDOException $e) {
-        if ($e->getCode() === '23000') { // unique violation (race)
+        if ($e->getCode() === '23000') {
             jsonResponse(['error' => 'An account with this email already exists.'], 409);
         }
         error_log('Register failed: ' . $e->getMessage());
@@ -123,7 +121,6 @@ function handleLogin(PDO|FileDbAdapter $pdo): void {
     $stmt->execute([':email' => $email]);
     $user = $stmt->fetch();
 
-    // Always run a hash check so unknown emails take about as long as wrong passwords.
     $hash = ($user && !empty($user['password_hash']))
         ? $user['password_hash']
         : password_hash('not-a-real-password', PASSWORD_DEFAULT);

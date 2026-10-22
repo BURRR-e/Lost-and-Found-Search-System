@@ -38,7 +38,6 @@ function handleGetReports(PDO|FileDbAdapter $pdo): void {
     $whereClause = ['1=1'];
     $params = [];
 
-    // Only admins may see pending / rejected reports.
     if (!isAdmin()) {
         $whereClause[] = "status IN ('confirmed', 'claimed', 'returned')";
     }
@@ -76,7 +75,6 @@ function handleGetReports(PDO|FileDbAdapter $pdo): void {
             WHERE " . implode(' AND ', $whereClause) . "
             ORDER BY id DESC";
 
-    // When filtering to "my reports" the limit is applied after filtering (below).
     if ($limit > 0 && !$mine) {
         $sql .= " LIMIT " . $limit;
     }
@@ -90,7 +88,6 @@ function handleGetReports(PDO|FileDbAdapter $pdo): void {
             $reports = array_values(array_filter($reports, fn($r) => (int)($r['user_id'] ?? 0) === (int)$sessUser['id']));
             if ($limit > 0) $reports = array_slice($reports, 0, $limit);
         }
-        // Never expose who owns a report to other visitors.
         foreach ($reports as &$r) { unset($r['user_id']); }
         unset($r);
 
@@ -101,7 +98,7 @@ function handleGetReports(PDO|FileDbAdapter $pdo): void {
 }
 
 function handleCreateReport(PDO|FileDbAdapter $pdo): void {
-    $sessionUser = requireLogin(); // every report belongs to an account
+    $sessionUser = requireLogin();
     $input = getJsonInput();
 
     $itemName    = trim($input['item-name'] ?? $input['itemName'] ?? $input['item_name'] ?? $_POST['item-name'] ?? $_POST['item_name'] ?? '');

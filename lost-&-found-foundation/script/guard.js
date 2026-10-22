@@ -1,7 +1,3 @@
-// Page guard. Usage in <head>:
-//   <script src="/script/guard.js" data-role="user"></script>     (any signed-in user)
-//   <script src="/script/guard.js" data-role="admin" data-signout="nav"></script>
-// This only hides pages from the wrong visitor; the API enforces access on the server.
 (function () {
   const tag = document.currentScript;
   const need = (tag && tag.dataset.role) || 'user';

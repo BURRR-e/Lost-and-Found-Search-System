@@ -307,7 +307,7 @@ class FileDbAdapter {
             return [['count' => count($filtered)]];
         }
 
-        $filtered = array_reverse($filtered); // ORDER BY id DESC
+        $filtered = array_reverse($filtered);
 
         if (preg_match('/LIMIT\s+(\d+)/i', $sql, $m)) {
             $filtered = array_slice($filtered, 0, (int)$m[1]);

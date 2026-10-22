@@ -26,7 +26,7 @@ function handleGetAccount(PDO|FileDbAdapter $pdo): void {
     $row = $stmt->fetch();
 
     if (!$row) {
-        logoutSession(); // account was deleted
+        logoutSession();
         jsonResponse(['success' => false, 'error' => 'Account not found.'], 401);
     }
     $user = publicUser($row);
@@ -55,8 +55,6 @@ function handleGetAccount(PDO|FileDbAdapter $pdo): void {
 function handleUpdateAccount(PDO|FileDbAdapter $pdo): void {
     $sess  = requireLogin();
     $input = getJsonInput();
-
-    // Email and role are fixed: email is the login identity, role is admin-controlled.
     $fullName = trim($input['full-name'] ?? $input['full_name'] ?? '');
     $schoolId = isset($input['school_id']) ? trim($input['school_id']) : '';
 

@@ -2,7 +2,7 @@ function setInfo(container, rows) {
   container.replaceChildren();
   rows.forEach(function (row) {
     const p = document.createElement('p');
-    p.textContent = row[0] + ': ' + (row[1] == null ? '' : row[1]); // textContent: no HTML injection
+    p.textContent = row[0] + ': ' + (row[1] == null ? '' : row[1]);
     container.appendChild(p);
   });
 }
@@ -53,7 +53,7 @@ async function loadAccountData() {
     if (nameInput) nameInput.value = data.full_name || '';
     if (emailInput) {
       emailInput.value = data.email || '';
-      emailInput.readOnly = true; // email is the login identity
+      emailInput.readOnly = true;
       emailInput.title = 'Email cannot be changed';
     }
   } catch (err) {

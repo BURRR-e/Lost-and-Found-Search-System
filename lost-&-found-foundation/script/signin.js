@@ -1,7 +1,6 @@
 const form = document.getElementById("questions");
 const isAdminForm = form.dataset.admin === "true";
 
-// Only allow same-site relative redirects (blocks ?next=//evil.com).
 function safeNext() {
   const next = new URLSearchParams(window.location.search).get("next");
   return next && next.startsWith("/") && !next.startsWith("//") ? next : null;

@@ -5,8 +5,6 @@ header('Content-Type: application/json; charset=utf-8');
 
 $pdo = getDbConnection();
 
-// Regular users only ever see their own numbers. Admins get site-wide totals
-// (used by the admin pages) unless they ask for ?scope=mine.
 $user  = currentUser();
 $mine  = !isAdmin($user) || ($_GET['scope'] ?? '') === 'mine';
 

@@ -30,7 +30,6 @@ function handleGetClaims(PDO|FileDbAdapter $pdo): void {
     $status = $_GET['status'] ?? 'all';
     $email  = trim($_GET['email'] ?? '');
 
-    // Regular users only ever see their own claims; admins may filter by email.
     if (!isAdmin($user)) {
         $email = $user['email'];
     }
@@ -73,7 +72,6 @@ function handleCreateClaim(PDO|FileDbAdapter $pdo): void {
     $user        = requireLogin();
     $reportCode  = trim($input['report_code'] ?? $input['reportCode'] ?? '');
     $itemName    = trim($input['item_name']   ?? $input['itemName']   ?? '');
-    // Claimant identity always comes from the signed-in account, never from the request body.
     $fullName    = $user['full_name'];
     $email       = $user['email'];
     $schoolId    = (string)($user['school_id'] ?? '');
@@ -210,7 +208,6 @@ function handleDeleteClaim(PDO|FileDbAdapter $pdo): void {
     $cStmt->execute($id ? [':id' => $id] : [':claim_id' => $claimId]);
     $cRow = $cStmt->fetch();
 
-    // Users may only cancel their own claims; admins may remove any.
     if ($cRow && !isAdmin($user) && strcasecmp((string)($cRow['email'] ?? ''), $user['email']) !== 0) {
         jsonResponse(['error' => 'You can only cancel your own claim requests.'], 403);
     }
