@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/auth.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -19,69 +19,60 @@ switch ($method) {
 }
 
 function handleGetAccount(PDO|FileDbAdapter $pdo): void {
-    $email = $_GET['email'] ?? 'user@school.edu';
+    $sess = requireLogin();
 
     $stmt = $pdo->prepare("SELECT id, full_name, email, school_id, role, created_at FROM users WHERE email = :email");
-    $stmt->execute([':email' => $email]);
-    $user = $stmt->fetch();
+    $stmt->execute([':email' => $sess['email']]);
+    $row = $stmt->fetch();
 
-    if (!$user) {
-        $user = [
-            'full_name' => 'Sample User',
-            'email'     => 'user@school.edu',
-            'school_id' => '000000',
-            'role'      => 'Student'
-        ];
+    if (!$row) {
+        logoutSession(); // account was deleted
+        jsonResponse(['success' => false, 'error' => 'Account not found.'], 401);
     }
+    $user = publicUser($row);
 
-    $lostStmt = $pdo->prepare("SELECT COUNT(*) FROM reports WHERE report_type = 'lost' AND (user_id = :uid OR status != '')");
-    $lostStmt->execute([':uid' => $user['id'] ?? 0]);
-    $lostCount = (int)$lostStmt->fetchColumn();
-
-    $foundStmt = $pdo->prepare("SELECT COUNT(*) FROM reports WHERE report_type = 'found' AND (user_id = :uid OR status != '')");
-    $foundStmt->execute([':uid' => $user['id'] ?? 0]);
-    $foundCount = (int)$foundStmt->fetchColumn();
+    $lost = $found = $returned = 0;
+    foreach ($pdo->query("SELECT id, report_type, status, user_id FROM reports")->fetchAll() as $r) {
+        if ((int)($r['user_id'] ?? 0) !== $user['id']) continue;
+        if (($r['report_type'] ?? '') === 'lost')  $lost++;
+        if (($r['report_type'] ?? '') === 'found') $found++;
+        if (in_array($r['status'] ?? '', ['claimed', 'returned'], true)) $returned++;
+    }
 
     $claimStmt = $pdo->prepare("SELECT COUNT(*) FROM claims WHERE email = :email");
     $claimStmt->execute([':email' => $user['email']]);
-    $claimCount = (int)$claimStmt->fetchColumn();
 
     $user['activity'] = [
-        'lost_reports'  => $lostCount,
-        'found_reports' => $foundCount,
-        'claim_requests'=> $claimCount
+        'lost_reports'   => $lost,
+        'found_reports'  => $found,
+        'returned_items' => $returned,
+        'claim_requests' => (int)$claimStmt->fetchColumn(),
     ];
 
     jsonResponse(['success' => true, 'data' => $user]);
 }
 
 function handleUpdateAccount(PDO|FileDbAdapter $pdo): void {
+    $sess  = requireLogin();
     $input = getJsonInput();
 
+    // Email and role are fixed: email is the login identity, role is admin-controlled.
     $fullName = trim($input['full-name'] ?? $input['full_name'] ?? '');
-    $email    = trim($input['account-email'] ?? $input['email'] ?? '');
     $schoolId = isset($input['school_id']) ? trim($input['school_id']) : '';
 
-    if (empty($fullName) || empty($email)) {
-        jsonResponse(['error' => 'Full Name and Email Address are required.'], 400);
+    if ($fullName === '' || mb_strlen($fullName) > 100) {
+        jsonResponse(['error' => 'Full Name is required (max 100 characters).'], 400);
     }
 
-    $checkStmt = $pdo->prepare("SELECT id FROM users WHERE email = :email");
-    $checkStmt->execute([':email' => $email]);
-    $existing = $checkStmt->fetch();
-
-    if ($existing) {
-        if ($schoolId !== '') {
-            $stmt = $pdo->prepare("UPDATE users SET full_name = :name, school_id = :school_id WHERE id = :id");
-            $stmt->execute([':name' => $fullName, ':school_id' => $schoolId, ':id' => $existing['id']]);
-        } else {
-            $stmt = $pdo->prepare("UPDATE users SET full_name = :name WHERE id = :id");
-            $stmt->execute([':name' => $fullName, ':id' => $existing['id']]);
-        }
+    if ($schoolId !== '') {
+        $stmt = $pdo->prepare("UPDATE users SET full_name = :name, school_id = :school_id WHERE id = :id");
+        $stmt->execute([':name' => $fullName, ':school_id' => $schoolId, ':id' => $sess['id']]);
+        $_SESSION['user']['school_id'] = $schoolId;
     } else {
-        $stmt = $pdo->prepare("INSERT INTO users (full_name, email, school_id, role) VALUES (:name, :email, :school_id, 'Student')");
-        $stmt->execute([':name' => $fullName, ':email' => $email, ':school_id' => $schoolId !== '' ? $schoolId : '000000']);
+        $stmt = $pdo->prepare("UPDATE users SET full_name = :name WHERE id = :id");
+        $stmt->execute([':name' => $fullName, ':id' => $sess['id']]);
     }
+    $_SESSION['user']['full_name'] = $fullName;
 
     jsonResponse(['success' => true, 'message' => 'Profile updated successfully.']);
 }

@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/auth.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -15,6 +15,7 @@ switch ($method) {
         break;
     case 'PUT':
     case 'PATCH':
+        requireAdmin();
         handleUpdateClaim($pdo);
         break;
     case 'DELETE':
@@ -25,8 +26,14 @@ switch ($method) {
 }
 
 function handleGetClaims(PDO|FileDbAdapter $pdo): void {
+    $user   = requireLogin();
     $status = $_GET['status'] ?? 'all';
     $email  = trim($_GET['email'] ?? '');
+
+    // Regular users only ever see their own claims; admins may filter by email.
+    if (!isAdmin($user)) {
+        $email = $user['email'];
+    }
 
     $whereClause = ['1=1'];
     $params = [];
@@ -63,11 +70,13 @@ function handleGetClaims(PDO|FileDbAdapter $pdo): void {
 function handleCreateClaim(PDO|FileDbAdapter $pdo): void {
     $input = getJsonInput();
 
+    $user        = requireLogin();
     $reportCode  = trim($input['report_code'] ?? $input['reportCode'] ?? '');
     $itemName    = trim($input['item_name']   ?? $input['itemName']   ?? '');
-    $fullName    = trim($input['full_name']   ?? $input['fullName']   ?? 'Sample User');
-    $email       = trim($input['email']       ?? 'user@school.edu');
-    $schoolId    = trim($input['school_id']   ?? $input['schoolId']   ?? '000000');
+    // Claimant identity always comes from the signed-in account, never from the request body.
+    $fullName    = $user['full_name'];
+    $email       = $user['email'];
+    $schoolId    = (string)($user['school_id'] ?? '');
 
     if (empty($reportCode) && empty($itemName)) {
         jsonResponse(['error' => 'Item information or Report Code is required.'], 400);
@@ -188,7 +197,8 @@ function handleUpdateClaim(PDO|FileDbAdapter $pdo): void {
 }
 
 function handleDeleteClaim(PDO|FileDbAdapter $pdo): void {
-    $input = getJsonInput();
+    $user    = requireLogin();
+    $input   = getJsonInput();
     $id      = $_GET['id'] ?? $input['id'] ?? null;
     $claimId = $_GET['claim_id'] ?? $input['claim_id'] ?? null;
 
@@ -196,9 +206,14 @@ function handleDeleteClaim(PDO|FileDbAdapter $pdo): void {
         jsonResponse(['error' => 'Claim ID is required.'], 400);
     }
 
-    $cStmt = $pdo->prepare("SELECT report_id, report_code FROM claims WHERE " . ($id ? "id = :id" : "claim_id = :claim_id"));
+    $cStmt = $pdo->prepare("SELECT report_id, report_code, email FROM claims WHERE " . ($id ? "id = :id" : "claim_id = :claim_id"));
     $cStmt->execute($id ? [':id' => $id] : [':claim_id' => $claimId]);
     $cRow = $cStmt->fetch();
+
+    // Users may only cancel their own claims; admins may remove any.
+    if ($cRow && !isAdmin($user) && strcasecmp((string)($cRow['email'] ?? ''), $user['email']) !== 0) {
+        jsonResponse(['error' => 'You can only cancel your own claim requests.'], 403);
+    }
 
     if ($cRow) {
         setReportStatusForClaim($pdo, $cRow, 'confirmed', 'claimed');

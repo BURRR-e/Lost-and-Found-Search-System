@@ -1,3 +1,9 @@
+function esc(v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+
 async function loadAdminAccountOverview() {
   try {
     const statsRes = await fetch('/api/stats.php');
@@ -43,10 +49,10 @@ async function loadAdminAccountOverview() {
             div.style.padding = '10px';
             div.style.marginBottom = '10px';
             div.innerHTML = `
-              <h3>${r.item_name} (${r.report_id})</h3>
-              <p>Category: ${r.category}</p>
-              <p>Type: ${r.report_type}</p>
-              <p>Status: ${r.status}</p>
+              <h3>${esc(r.item_name)} (${esc(r.report_id)})</h3>
+              <p>Category: ${esc(r.category)}</p>
+              <p>Type: ${esc(r.report_type)}</p>
+              <p>Status: ${esc(r.status)}</p>
               <button type="button" onclick="confirmReportFromAdmin(${r.id})">Approve Report</button>
             `;
             reportsContainer.appendChild(div);
@@ -80,10 +86,10 @@ async function loadAdminAccountOverview() {
             div.style.padding = '10px';
             div.style.marginBottom = '10px';
             div.innerHTML = `
-              <h3>Claim ${c.claim_id}</h3>
-              <p>Item: ${c.item_name || 'Item'}</p>
-              <p>Claimant: ${c.full_name} (${c.email})</p>
-              <p>Status: ${c.status}</p>
+              <h3>Claim ${esc(c.claim_id)}</h3>
+              <p>Item: ${esc(c.item_name || 'Item')}</p>
+              <p>Claimant: ${esc(c.full_name)} (${esc(c.email)})</p>
+              <p>Status: ${esc(c.status)}</p>
               <button type="button" onclick="approveClaimFromAdmin(${c.id})">Approve Claim</button>
             `;
             claimsContainer.appendChild(div);

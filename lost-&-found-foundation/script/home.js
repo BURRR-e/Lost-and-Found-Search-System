@@ -1,17 +1,25 @@
 async function loadHomeData() {
   try {
-    const statsRes = await fetch('/api/stats.php');
+    const statsRes = await fetch('/api/stats.php?scope=mine', { credentials: 'same-origin' });
     if (statsRes.ok) {
       const statsData = await statsRes.json();
       if (statsData.success) {
         const stats = statsData.data;
+        const signedIn = statsData.signed_in !== false;
         const lostEl = document.getElementById('lost-items-count');
         const foundEl = document.getElementById('found-items-count');
         const returnedEl = document.getElementById('returned-items-count');
 
-        if (lostEl) lostEl.textContent = `${stats.lost_items} reported items`;
-        if (foundEl) foundEl.textContent = `${stats.found_items} reported items`;
-        if (returnedEl) returnedEl.textContent = `${stats.returned_items} returned items`;
+        if (!signedIn) {
+          const msg = 'Sign in to see your items';
+          if (lostEl) lostEl.textContent = msg;
+          if (foundEl) foundEl.textContent = msg;
+          if (returnedEl) returnedEl.textContent = msg;
+        } else {
+          if (lostEl) lostEl.textContent = `${stats.lost_items} of your reported items`;
+          if (foundEl) foundEl.textContent = `${stats.found_items} of your reported items`;
+          if (returnedEl) returnedEl.textContent = `${stats.returned_items} of your items returned`;
+        }
       }
     }
   } catch (err) {

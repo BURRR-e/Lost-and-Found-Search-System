@@ -1,39 +1,50 @@
-const questions = document.getElementById("questions");
+const form = document.getElementById("questions");
+const isAdminForm = form.dataset.admin === "true";
 
-questions.addEventListener("submit", function(event) {
+form.addEventListener("submit", async function (event) {
   event.preventDefault();
 
-  const name = document.getElementById("name").value.trim();
-  const email = document.getElementById("email").value.trim().toLowerCase();
-  const schoolid = document.getElementById("schoolid").value.trim();
-  const role = document.getElementById("role").value;
-  const password = document.getElementById("password").value;
+  const payload = {
+    name: document.getElementById("name").value.trim(),
+    email: document.getElementById("email").value.trim().toLowerCase(),
+    school_id: document.getElementById("schoolid").value.trim(),
+    password: document.getElementById("password").value
+  };
 
-  const accounts = JSON.parse(localStorage.getItem("accounts")) || [];
+  const roleSelect = document.getElementById("role");
+  if (roleSelect) payload.role = roleSelect.value;
 
-  const existingAccount = accounts.find(function(account) {
-    return account.email.toLowerCase() === email ||
-           account.schoolid === schoolid;
-  });
+  const invite = document.getElementById("invitecode");
+  if (invite) payload.invite_code = invite.value;
 
-  if (existingAccount) {
-    alert("This email or School ID is already registered.");
+  const confirm = document.getElementById("confirm");
+  if (confirm && confirm.value !== payload.password) {
+    alert("Passwords do not match.");
     return;
   }
 
-  const newAccount = {
-    name: name,
-    email: email,
-    schoolid: schoolid,
-    role: role,
-    password: password
-  };
+  const button = document.getElementById("submit");
+  button.disabled = true;
+  try {
+    const action = isAdminForm ? "register_admin" : "register";
+    const res = await fetch("/api/auth.php?action=" + action, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const result = await res.json().catch(function () { return {}; });
 
-  accounts.push(newAccount);
+    if (!res.ok || !result.success) {
+      alert(result.error || "Could not create the account.");
+      return;
+    }
 
-  localStorage.setItem("accounts", JSON.stringify(accounts));
-
-  alert("Account created successfully!");
-
-  window.location.href = "signin.html";
+    alert("Account created successfully! Please sign in.");
+    window.location.href = isAdminForm ? "admin-signin.html" : "signin.html";
+  } catch (err) {
+    alert("Network error. Please try again.");
+  } finally {
+    button.disabled = false;
+  }
 });

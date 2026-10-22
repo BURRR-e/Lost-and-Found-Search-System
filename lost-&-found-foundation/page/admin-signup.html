@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lost and Found Admin Sign up</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/style/style.css">
+  <link rel="stylesheet" href="/style/signin.css">
+  <link rel="stylesheet" href="/style/navigation.css">
+</head>
+
+<body>
+  <div class="head">
+    <img src="/assets/logo.png" alt="Lost and Found logo" class="logo">
+    <h2>Lost and Found</h2>
+  </div>
+
+  <div class="whole">
+    <div class="greet">
+      <h1>Admin sign up</h1>
+      <p>Create an admin account. You need the invite code from your system administrator.</p>
+    </div>
+
+    <form id="questions" data-admin="true">
+      <label for="name">Name</label>
+      <input type="text" id="name" name="name" placeholder="Enter your name" required>
+
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" placeholder="Enter your email" required>
+
+      <label for="schoolid">Staff ID (optional)</label>
+      <input type="text" id="schoolid" name="schoolid" placeholder="Enter your staff ID">
+
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" placeholder="At least 8 characters" minlength="8" required>
+
+      <label for="confirm">Confirm password</label>
+      <input id="confirm" name="confirm" type="password" placeholder="Re-enter your password" required>
+
+      <label for="invitecode">Admin invite code</label>
+      <input id="invitecode" name="invitecode" type="password" placeholder="Enter the invite code" required autocomplete="off">
+
+      <button type="submit" id="submit">Sign up</button>
+    </form>
+
+    <p class="signup-link">Already have an admin account? <a href="/page/admin-signin.html">Admin sign in</a></p>
+    <p class="signup-link"><a href="/page/signup.html">Back to user sign up</a></p>
+  </div>
+
+  <p id="footer">© 2026 School Lost and Found System</p>
+
+  <script src="/script/signup.js"></script>
+</body>
+
+</html>

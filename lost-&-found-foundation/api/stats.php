@@ -1,11 +1,29 @@
 <?php
-require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/auth.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
 $pdo = getDbConnection();
-$reports = $pdo->query("SELECT id, status, report_type, category FROM reports")->fetchAll();
-$claims  = $pdo->query("SELECT id, status FROM claims")->fetchAll();
+
+// Regular users only ever see their own numbers. Admins get site-wide totals
+// (used by the admin pages) unless they ask for ?scope=mine.
+$user  = currentUser();
+$mine  = !isAdmin($user) || ($_GET['scope'] ?? '') === 'mine';
+
+if ($mine && $user === null) {
+    jsonResponse(['success' => true, 'signed_in' => false, 'data' => [
+        'lost_items' => 0, 'found_items' => 0, 'returned_items' => 0,
+        'pending_reports' => 0, 'pending_claims' => 0, 'total_claims' => 0, 'categories' => []
+    ]]);
+}
+
+$reports = $pdo->query("SELECT id, status, report_type, category, user_id FROM reports")->fetchAll();
+$claims  = $pdo->query("SELECT id, status, email FROM claims")->fetchAll();
+
+if ($mine) {
+    $reports = array_values(array_filter($reports, fn($r) => (int)($r['user_id'] ?? 0) === (int)$user['id']));
+    $claims  = array_values(array_filter($claims, fn($c) => strcasecmp((string)($c['email'] ?? ''), $user['email']) === 0));
+}
 
 $lostCount = $foundCount = $returnedCount = $pendingReports = 0;
 $categories = [];
@@ -39,6 +57,8 @@ foreach ($categories as $cat => $total) {
 
 jsonResponse([
     'success' => true,
+    'signed_in' => $user !== null,
+    'scope' => $mine ? 'mine' : 'all',
     'data' => [
         'lost_items'      => $lostCount,
         'found_items'     => $foundCount,

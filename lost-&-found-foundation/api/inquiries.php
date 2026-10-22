@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/auth.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -8,6 +8,7 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 switch ($method) {
     case 'GET':
+        requireAdmin();
         handleGetInquiries($pdo);
         break;
     case 'POST':
@@ -15,6 +16,7 @@ switch ($method) {
         break;
     case 'PUT':
     case 'PATCH':
+        requireAdmin();
         handleUpdateInquiry($pdo);
         break;
     default:
@@ -65,6 +67,9 @@ function handleUpdateInquiry(PDO|FileDbAdapter $pdo): void {
 
     if (!$id || !$status) {
         jsonResponse(['error' => 'Inquiry ID and status are required.'], 400);
+    }
+    if (!in_array($status, ['unread', 'read', 'resolved'], true)) {
+        jsonResponse(['error' => 'Invalid inquiry status.'], 400);
     }
 
     $stmt = $pdo->prepare("UPDATE inquiries SET status = :status WHERE id = :id");

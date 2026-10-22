@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="/style/style.css">
     <link rel="stylesheet" href="/style/navigation.css">
 
+    <script src="/script/guard.js" data-role="user"></script>
 </head>
 <body>
 
@@ -98,6 +99,12 @@
         </div>
 
         <div>
+            <h3>Returned Items</h3>
+            <p>0 items returned</p>
+            <a href="dashboard.html">View Dashboard</a>
+        </div>
+
+        <div>
             <h3>Claim Requests</h3>
             <p>0 claim requests submitted</p>
             <a href="claims.html">View My Claims</a>
@@ -126,8 +133,21 @@
 
     <div>
         <h2>Account Actions</h2>
-        <button type="button">Change Password</button>
-        <button type="button">Sign Out</button>
+        <button type="button" id="change-password-btn">Change Password</button>
+        <button type="button" id="sign-out-btn">Sign Out</button>
+
+        <form id="password-form" hidden>
+            <label for="current-password">Current password</label>
+            <input type="password" id="current-password" autocomplete="current-password" required>
+
+            <label for="new-password">New password (8+ characters)</label>
+            <input type="password" id="new-password" autocomplete="new-password" minlength="8" required>
+
+            <label for="confirm-password">Confirm new password</label>
+            <input type="password" id="confirm-password" autocomplete="new-password" minlength="8" required>
+
+            <button type="submit">Update Password</button>
+        </form>
     </div>
 
     <footer>

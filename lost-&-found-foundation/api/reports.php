@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/auth.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -15,9 +15,11 @@ switch ($method) {
         break;
     case 'PUT':
     case 'PATCH':
+        requireAdmin();
         handleUpdateReport($pdo);
         break;
     case 'DELETE':
+        requireAdmin();
         handleDeleteReport($pdo);
         break;
     default:
@@ -30,9 +32,16 @@ function handleGetReports(PDO|FileDbAdapter $pdo): void {
     $category = trim($_GET['category'] ?? '');
     $type     = strtolower(trim($_GET['type'] ?? ''));
     $limit    = isset($_GET['limit']) ? (int)$_GET['limit'] : 0;
+    $mine     = !empty($_GET['mine']);
+    $sessUser = $mine ? requireLogin() : null;
 
     $whereClause = ['1=1'];
     $params = [];
+
+    // Only admins may see pending / rejected reports.
+    if (!isAdmin()) {
+        $whereClause[] = "status IN ('confirmed', 'claimed', 'returned')";
+    }
 
     if ($status !== 'all' && !empty($status)) {
         if ($status === 'dashboard') {
@@ -62,12 +71,13 @@ function handleGetReports(PDO|FileDbAdapter $pdo): void {
         $params[':s1'] = $params[':s2'] = $params[':s3'] = $params[':s4'] = $like;
     }
 
-    $sql = "SELECT id, report_id, item_name, category, description, date_event, location, photo_url, status, report_type, created_at
+    $sql = "SELECT id, report_id, item_name, category, description, date_event, location, photo_url, status, report_type, created_at, user_id
             FROM reports
             WHERE " . implode(' AND ', $whereClause) . "
             ORDER BY id DESC";
 
-    if ($limit > 0) {
+    // When filtering to "my reports" the limit is applied after filtering (below).
+    if ($limit > 0 && !$mine) {
         $sql .= " LIMIT " . $limit;
     }
 
@@ -75,6 +85,15 @@ function handleGetReports(PDO|FileDbAdapter $pdo): void {
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
         $reports = $stmt->fetchAll();
+
+        if ($mine) {
+            $reports = array_values(array_filter($reports, fn($r) => (int)($r['user_id'] ?? 0) === (int)$sessUser['id']));
+            if ($limit > 0) $reports = array_slice($reports, 0, $limit);
+        }
+        // Never expose who owns a report to other visitors.
+        foreach ($reports as &$r) { unset($r['user_id']); }
+        unset($r);
+
         jsonResponse(['success' => true, 'data' => $reports]);
     } catch (PDOException $e) {
         jsonResponse(['success' => false, 'error' => $e->getMessage(), 'data' => []], 500);
@@ -82,6 +101,7 @@ function handleGetReports(PDO|FileDbAdapter $pdo): void {
 }
 
 function handleCreateReport(PDO|FileDbAdapter $pdo): void {
+    $sessionUser = requireLogin(); // every report belongs to an account
     $input = getJsonInput();
 
     $itemName    = trim($input['item-name'] ?? $input['itemName'] ?? $input['item_name'] ?? $_POST['item-name'] ?? $_POST['item_name'] ?? '');
@@ -149,8 +169,8 @@ function handleCreateReport(PDO|FileDbAdapter $pdo): void {
     }
     $reportId = sprintf("%s%03d", $prefix, $maxSeq + 1);
 
-    $sql = "INSERT INTO reports (report_id, item_name, category, description, date_event, location, photo_url, status, report_type)
-            VALUES (:report_id, :item_name, :category, :description, :date_event, :location, :photo_url, 'confirmed', :report_type)";
+    $sql = "INSERT INTO reports (report_id, item_name, category, description, date_event, location, photo_url, status, report_type, user_id)
+            VALUES (:report_id, :item_name, :category, :description, :date_event, :location, :photo_url, 'confirmed', :report_type, :user_id)";
 
     try {
     $stmt = $pdo->prepare($sql);
@@ -162,7 +182,8 @@ function handleCreateReport(PDO|FileDbAdapter $pdo): void {
         ':date_event'  => $dateEvent,
         ':location'    => $location,
         ':photo_url'   => $photoUrl,
-        ':report_type' => $reportType
+        ':report_type' => $reportType,
+        ':user_id'     => $sessionUser['id']
     ]);
     } catch (Throwable $e) {
         jsonResponse(['success' => false, 'error' => 'Could not save report: ' . $e->getMessage()], 500);

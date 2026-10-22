@@ -32,7 +32,14 @@ async function displayConfirmedReports(searchQuery = '', categoryFilter = '', st
       url += `&category=${encodeURIComponent(categoryFilter)}`;
     }
 
-    const res = await fetch(url);
+    const mineBox = document.getElementById('mine');
+    if (mineBox && mineBox.checked) url += '&mine=1';
+
+    const res = await fetch(url, { credentials: 'same-origin' });
+    if (res.status === 401) {
+      window.location.href = '/page/signin.html?next=/page/dashboard.html';
+      return;
+    }
     if (!res.ok) {
       confirmReport.innerHTML = '<p>Unable to load dashboard reports.</p>';
       return;
@@ -107,6 +114,10 @@ async function displayConfirmedReports(searchQuery = '', categoryFilter = '', st
                 school_id: user.school_id
               })
             });
+            if (claimRes.status === 401) {
+              window.location.href = '/page/signin.html?next=/page/dashboard.html';
+              return;
+            }
             const claimResult = await claimRes.json();
             if (claimRes.ok && claimResult.success) {
               alert('Claim request submitted! You can view status in My Claims.');
